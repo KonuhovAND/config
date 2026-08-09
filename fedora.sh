@@ -126,7 +126,7 @@ systemctl --user enable --now syncthing
 # 12. Ollama (Local LLMs)
 # ==========================================
 echo "=== Installing Ollama ==="
-curl -fsSL https://ollama.com/install.sh | sh
+#curl -fsSL https://ollama.com/install.sh | sh
 
 # ==========================================
 # 13. Flatpak Setup & GUI Apps
@@ -148,12 +148,19 @@ flatpak install -y flathub \
 # ==========================================
 echo "=== Installing Zen Browser ==="
 ZEN_API="https://api.github.com/repos/zen-browser/desktop/releases/latest"
-ZEN_URL=$(curl -s "$ZEN_API" | grep -oP 'https://[^"]+zen\.linux-x86_64\.tar\.[^"]+' | head -1)
+# Match both .tar.xz and .tar.bz2
+ZEN_URL=$(curl -s "$ZEN_API" | grep -oP 'https://[^"]+zen\.linux-x86_64\.tar\.(xz|bz2)[^"]*' | head -1)
 
 if [ -n "$ZEN_URL" ]; then
+  # Detect the actual extension (.xz or .bz2)
+  EXT=$(echo "$ZEN_URL" | grep -oP '\.(xz|bz2)')
+  FILENAME="zen.tar$EXT"
+  
   mkdir -p ~/.local/share/zen
-  wget -q --show-progress "$ZEN_URL" -O /tmp/zen.tar.bz2
-  tar -xjf /tmp/zen.tar.bz2 -C /tmp/
+  wget -q --show-progress "$ZEN_URL" -O "/tmp/$FILENAME"
+  
+  # 'tar -xf' automatically detects the compression type (xz, bz2, gz)
+  tar -xf "/tmp/$FILENAME" -C /tmp/
   
   # Handle varying archive structures
   if [ -d /tmp/zen ]; then
@@ -161,7 +168,7 @@ if [ -n "$ZEN_URL" ]; then
   else
     mkdir -p ~/.local/share/zen && cp -r /tmp/* ~/.local/share/zen/ 2>/dev/null || true
   fi
-  rm -rf /tmp/zen /tmp/zen.tar.bz2 2>/dev/null || true
+  rm -rf /tmp/zen "/tmp/$FILENAME" 2>/dev/null || true
 
   # Create .desktop entry
   mkdir -p ~/.local/share/applications
@@ -201,6 +208,5 @@ echo "  2. Download LM Studio from https://lmstudio.ai"
 echo "  3. Log out and back in for Steam/Flatpak permissions to fully apply"
 echo "  4. For Roblox, launch 'Sober' from your app menu"
 echo "  5. To use Python 3.14: uv venv --python 3.14"
-
 
 git clone --separate-git-dir=$HOME/.cfg git@github.com:KonuhovAND/config.git ~/.config
