@@ -148,50 +148,6 @@ flatpak install -y flathub \
   com.usebottles.bottles \
   org.vinegarhq.Sober
 
-# ==========================================
-# 14. Zen Browser
-# ==========================================
-echo "=== Installing Zen Browser ==="
-ZEN_API="https://api.github.com/repos/zen-browser/desktop/releases/latest"
-# Match both .tar.xz and .tar.bz2
-ZEN_URL=$(curl -s "$ZEN_API" | grep -oP 'https://[^"]+zen\.linux-x86_64\.tar\.(xz|bz2)[^"]*' | head -1)
-
-if [ -n "$ZEN_URL" ]; then
-  # Detect the actual extension (.xz or .bz2)
-  EXT=$(echo "$ZEN_URL" | grep -oP '\.(xz|bz2)')
-  FILENAME="zen.tar$EXT"
-  
-  mkdir -p ~/.local/share/zen
-  wget -q --show-progress "$ZEN_URL" -O "/tmp/$FILENAME"
-  
-  # 'tar -xf' automatically detects the compression type (xz, bz2, gz)
-  tar -xf "/tmp/$FILENAME" -C /tmp/
-  
-  # Handle varying archive structures
-  if [ -d /tmp/zen ]; then
-    cp -r /tmp/zen/* ~/.local/share/zen/
-  else
-    mkdir -p ~/.local/share/zen && cp -r /tmp/* ~/.local/share/zen/ 2>/dev/null || true
-  fi
-  rm -rf /tmp/zen "/tmp/$FILENAME" 2>/dev/null || true
-
-  # Create .desktop entry
-  mkdir -p ~/.local/share/applications
-  cat > ~/.local/share/applications/zen-browser.desktop <<EOF
-[Desktop Entry]
-Name=Zen Browser
-Exec=$HOME/.local/share/zen/zen
-Icon=$HOME/.local/share/zen/browser/chrome/icons/default/default128.png
-Type=Application
-Categories=Network;WebBrowser;
-Terminal=false
-EOF
-  update-desktop-database ~/.local/share/applications
-  echo "Zen Browser installed to ~/.local/share/zen"
-else
-  echo "⚠️  Could not auto-fetch Zen Browser. Install manually from https://zen-browser.app"
-fi
-
 
 # ==========================================
 # 16. Post-Install Notes
