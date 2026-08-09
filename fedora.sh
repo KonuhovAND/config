@@ -1,7 +1,6 @@
 #!/bin/bash
 set -euo pipefail
 
-
 # ==========================================
 # 11. Throne Proxy
 # ==========================================
@@ -48,6 +47,7 @@ sudo dnf install -y \
   git curl wget vim neovim tmux htop \
   gnome-tweaks fontconfig unzip p7zip p7zip-plugins \
   fzf zsh \
+  feh \
   fastfetch || sudo dnf install -y neofetch
 
 # ==========================================
@@ -72,19 +72,18 @@ uv python install 3.14
 # ==========================================
 echo "=== Configuring AMD Radeon Graphics ==="
 sudo dnf install -y \
-mesa-dri-drivers \
-mesa-va-drivers-freeworld \
-mesa-vulkan-drivers \
-vulkan-loader vulkan-loader.i686 \
-amd-gpu-firmware \
-thermald
+  mesa-dri-drivers \
+  mesa-va-drivers-freeworld \
+  mesa-vulkan-drivers \
+  vulkan-loader vulkan-loader.i686 \
+  amd-gpu-firmware \
+  thermald
 
 # Enable thermal management
 sudo systemctl enable --now thermald
 
 # Gaming performance tools
 sudo dnf install -y gamemode mangohud
-
 
 # ==========================================
 # 6. Terminal / CLI Apps from Repos
@@ -126,7 +125,6 @@ echo "=== Installing Syncthing ==="
 sudo dnf install -y syncthing
 systemctl --user enable --now syncthing
 
-
 # ==========================================
 # 12. Ollama (Local LLMs)
 # ==========================================
@@ -146,8 +144,8 @@ flatpak install -y flathub \
   org.telegram.desktop \
   md.obsidian.Obsidian \
   com.usebottles.bottles \
-  org.vinegarhq.Sober
-
+  org.vinegarhq.Sober \
+  io.dbeaver.DBeaverCommunity \ 
 
 # ==========================================
 # 16. Post-Install Notes
@@ -169,5 +167,3 @@ echo "  2. Download LM Studio from https://lmstudio.ai"
 echo "  3. Log out and back in for Steam/Flatpak permissions to fully apply"
 echo "  4. For Roblox, launch 'Sober' from your app menu"
 echo "  5. To use Python 3.14: uv venv --python 3.14"
-
-
