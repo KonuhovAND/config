@@ -49,13 +49,12 @@ uv python install 3.14
 # ==========================================
 echo "=== Configuring AMD Radeon Graphics ==="
 sudo dnf install -y \
-  mesa-dri-drivers \
-  mesa-va-drivers-freeworld \
-  mesa-vdpau-drivers-freeworld \
-  mesa-vulkan-drivers \
-  vulkan-loader vulkan-loader.i686 \
-  amd-gpu-firmware \
-  thermald
+mesa-dri-drivers \
+mesa-va-drivers-freeworld \
+mesa-vulkan-drivers \
+vulkan-loader vulkan-loader.i686 \
+amd-gpu-firmware \
+thermald
 
 # Enable thermal management
 sudo systemctl enable --now thermald
@@ -66,32 +65,31 @@ sudo dnf install -y gamemode mangohud
 # ==========================================
 # 5. Git Identity & SSH
 # ==========================================
-git config --global user.name 'KonuhovAND'
-git config --global user.email 'andreykonuhov8@gmail.com'
+#git config --global user.name 'KonuhovAND'
+#git config --global user.email 'andreykonuhov8@gmail.com'
 
-if [ ! -f ~/.ssh/id_ed25519 ]; then
-  ssh-keygen -t ed25519 -C "andreykonuhov8@mail.com" -N "" -f ~/.ssh/id_ed25519
-fi
+#if [ ! -f ~/.ssh/id_ed25519 ]; then
+#  ssh-keygen -t ed25519 -C "andreykonuhov8@mail.com" -N "" -f ~/.ssh/id_ed25519
+#fi
 
-echo "=== YOUR PUBLIC SSH KEY (Add to GitHub) ==="
-cat ~/.ssh/id_ed25519.pub
+#echo "=== YOUR PUBLIC SSH KEY (Add to GitHub) ==="
+#cat ~/.ssh/id_ed25519.pub
 echo "==========================================="
 
 # ==========================================
 # 6. Terminal / CLI Apps from Repos
 # ==========================================
 echo "=== Installing Lazygit, qBittorrent, mpv ==="
-sudo dnf install -y \
-  lazygit \
-  qbittorrent \
-  mpv
+sudo dnf install -y qbittorrent mpv
+sudo dnf copr enable -y atim/lazygit
+sudo dnf install -y lazygit
 
 # ==========================================
 # 7. Google Chrome
 # ==========================================
 echo "=== Installing Google Chrome ==="
 sudo dnf install -y fedora-workstation-repositories
-sudo dnf config-manager --set-enabled google-chrome
+sudo dnf config-manager setopt google-chrome.enabled=1
 sudo dnf install -y google-chrome-stable
 
 # ==========================================
@@ -121,8 +119,8 @@ systemctl --user enable --now syncthing
 # ==========================================
 # 11. Throne Proxy
 # ==========================================
-echo "=== Installing Throne ==="
-curl -fsSL https://raw.githubusercontent.com/throneproj/Throne/dev/script/install_linux.py | sudo python3
+#echo "=== Installing Throne ==="
+#curl -fsSL https://raw.githubusercontent.com/throneproj/Throne/dev/script/install_linux.py | sudo python3
 
 # ==========================================
 # 12. Ollama (Local LLMs)
@@ -182,15 +180,6 @@ else
   echo "⚠️  Could not auto-fetch Zen Browser. Install manually from https://zen-browser.app"
 fi
 
-# ==========================================
-# 15. LM Studio (Manual Step)
-# ==========================================
-echo ""
-echo "=== LM Studio ==="
-echo "LM Studio is distributed as an AppImage."
-echo "Download the latest Linux build from: https://lmstudio.ai"
-echo "Then run: chmod +x LM-Studio-*.AppImage && ./LM-Studio-*.AppImage"
-echo ""
 
 # ==========================================
 # 16. Post-Install Notes
@@ -212,3 +201,6 @@ echo "  2. Download LM Studio from https://lmstudio.ai"
 echo "  3. Log out and back in for Steam/Flatpak permissions to fully apply"
 echo "  4. For Roblox, launch 'Sober' from your app menu"
 echo "  5. To use Python 3.14: uv venv --python 3.14"
+
+
+git clone --separate-git-dir=$HOME/.cfg git@github.com:KonuhovAND/config.git ~/.config
