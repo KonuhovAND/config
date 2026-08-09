@@ -1,6 +1,29 @@
 #!/bin/bash
 set -euo pipefail
 
+
+# ==========================================
+# 11. Throne Proxy
+# ==========================================
+echo "=== Installing Throne ==="
+curl -fsSL https://raw.githubusercontent.com/throneproj/Throne/dev/script/install_linux.py | sudo python3
+
+# ==========================================
+# 5. Git Identity & SSH
+# ==========================================
+git config --global user.name 'KonuhovAND'
+git config --global user.email 'andreykonuhov8@gmail.com'
+
+if [ ! -f ~/.ssh/id_ed25519 ]; then
+  ssh-keygen -t ed25519 -C "andreykonuhov8@mail.com" -N "" -f ~/.ssh/id_ed25519
+fi
+
+echo "=== YOUR PUBLIC SSH KEY (Add to GitHub) ==="
+cat ~/.ssh/id_ed25519.pub
+echo "==========================================="
+
+sleep 30
+git clone --separate-git-dir=$HOME/.cfg https://github.com/KonuhovAND/config.git ~/config_files
 # ==========================================
 # Fedora Setup for AMD Ryzen 7 7330U
 # ==========================================
@@ -62,19 +85,6 @@ sudo systemctl enable --now thermald
 # Gaming performance tools
 sudo dnf install -y gamemode mangohud
 
-# ==========================================
-# 5. Git Identity & SSH
-# ==========================================
-#git config --global user.name 'KonuhovAND'
-#git config --global user.email 'andreykonuhov8@gmail.com'
-
-#if [ ! -f ~/.ssh/id_ed25519 ]; then
-#  ssh-keygen -t ed25519 -C "andreykonuhov8@mail.com" -N "" -f ~/.ssh/id_ed25519
-#fi
-
-#echo "=== YOUR PUBLIC SSH KEY (Add to GitHub) ==="
-#cat ~/.ssh/id_ed25519.pub
-echo "==========================================="
 
 # ==========================================
 # 6. Terminal / CLI Apps from Repos
@@ -116,11 +126,6 @@ echo "=== Installing Syncthing ==="
 sudo dnf install -y syncthing
 systemctl --user enable --now syncthing
 
-# ==========================================
-# 11. Throne Proxy
-# ==========================================
-#echo "=== Installing Throne ==="
-#curl -fsSL https://raw.githubusercontent.com/throneproj/Throne/dev/script/install_linux.py | sudo python3
 
 # ==========================================
 # 12. Ollama (Local LLMs)
@@ -209,4 +214,4 @@ echo "  3. Log out and back in for Steam/Flatpak permissions to fully apply"
 echo "  4. For Roblox, launch 'Sober' from your app menu"
 echo "  5. To use Python 3.14: uv venv --python 3.14"
 
-git clone --separate-git-dir=$HOME/.cfg git@github.com:KonuhovAND/config.git ~/.config
+
