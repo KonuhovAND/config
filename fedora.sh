@@ -5,7 +5,7 @@ set -euo pipefail
 # 11. Throne Proxy
 # ==========================================
 echo "=== Installing Throne ==="
-curl -fsSL https://raw.githubusercontent.com/throneproj/Throne/dev/script/install_linux.py | sudo python3
+#curl -fsSL https://raw.githubusercontent.com/throneproj/Throne/dev/script/install_linux.py | sudo python3
 
 # ==========================================
 # 5. Git Identity & SSH
