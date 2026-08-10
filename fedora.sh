@@ -45,7 +45,7 @@ sudo dnf install -y \
 echo "=== Installing Core Tools ==="
 sudo dnf install -y \
   git curl wget vim neovim tmux htop \
-  gnome-tweaks fontconfig unzip p7zip p7zip-plugins \
+  fontconfig unzip p7zip p7zip-plugins \
   fzf zsh \
   feh \
   fastfetch || sudo dnf install -y neofetch
@@ -101,15 +101,6 @@ sudo dnf install -y fedora-workstation-repositories
 sudo dnf config-manager setopt google-chrome.enabled=1
 sudo dnf install -y google-chrome-stable
 
-# ==========================================
-# 8. Wine & Native Steam (RPM Fusion)
-# ==========================================
-echo "=== Installing Wine & Steam ==="
-sudo dnf install -y \
-  wine \
-  steam \
-  steam-devices \
-  protontricks
 
 # ==========================================
 # 9. Fonts
@@ -117,6 +108,41 @@ sudo dnf install -y \
 echo "=== Installing JetBrains Mono ==="
 sudo dnf install -y jetbrains-mono-fonts
 fc-cache -f -v
+sudo dnf install -y alacritty
+
+mkdir -p ~/.config/alacritty && cat > ~/.config/alacritty/alacritty.toml <<'EOF'
+[font]
+size = 12.0
+
+[font.normal]
+family = "JetBrainsMono Nerd Font"
+style = "Regular"
+
+[font.bold]
+family = "JetBrains Mono"
+style = "Bold"
+
+[font.italic]
+family = "JetBrains Mono"
+style = "Italic"
+
+[font.bold_italic]
+family = "JetBrains Mono"
+style = "Bold Italic"
+
+# Optional: a bit of extra line spacing looks nicer for coding
+[font.offset]
+x = 0
+y = 1
+EOF
+
+
+mkdir -p ~/.local/share/fonts
+cd /tmp
+curl -LO https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip
+unzip -o JetBrainsMono.zip -d ~/.local/share/fonts/JetBrainsMono
+fc-cache -f
+cd
 
 # ==========================================
 # 10. Syncthing
@@ -129,7 +155,7 @@ systemctl --user enable --now syncthing
 # 12. Ollama (Local LLMs)
 # ==========================================
 echo "=== Installing Ollama ==="
-#curl -fsSL https://ollama.com/install.sh | sh
+curl -fsSL https://ollama.com/install.sh | sh
 
 # ==========================================
 # 13. Flatpak Setup & GUI Apps
@@ -145,7 +171,7 @@ flatpak install -y flathub \
   md.obsidian.Obsidian \
   com.usebottles.bottles \
   org.vinegarhq.Sober \
-  io.dbeaver.DBeaverCommunity \ 
+  io.dbeaver.DBeaverCommunity
 
 # ==========================================
 # 16. Post-Install Notes
