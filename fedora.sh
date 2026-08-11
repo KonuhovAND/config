@@ -196,3 +196,6 @@ sudo systemctl enable --now ryzenadj.service
 
 sudo systemctl enable --now tuned
 tuned-adm active
+
+
+sudo dnf install plasma-workspace-x11 kwin-x11
