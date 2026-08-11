@@ -170,7 +170,6 @@ flatpak install -y flathub \
   org.telegram.desktop \
   md.obsidian.Obsidian \
   com.usebottles.bottles \
-  org.vinegarhq.Sober \
   io.dbeaver.DBeaverCommunity
 
 sudo dnf copr enable shdwchn10/ryzenadj
