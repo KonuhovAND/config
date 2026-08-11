@@ -173,23 +173,27 @@ flatpak install -y flathub \
   org.vinegarhq.Sober \
   io.dbeaver.DBeaverCommunity
 
-# ==========================================
-# 16. Post-Install Notes
-# ==========================================
-echo "=== Setup Complete ==="
-echo ""
-echo "Installed apps summary:"
-echo "  Browsers:     Google Chrome, Zen Browser"
-echo "  Chat:         Discord, Telegram, Spotify"
-echo "  Dev:          Git, Neovim, Tmux, Lazygit, Node.js, Python 3.14 (via uv), uv"
-echo "  Gaming:       Steam, Wine, Bottles, MangoHud, GameMode, Roblox (Sober)"
-echo "  Tools:        Obsidian, Syncthing, qBittorrent, mpv, Ollama"
-echo "  Proxy:        Throne"
-echo "  AMD GPU:      Mesa Vulkan/VA-API drivers, Thermald"
-echo ""
-echo "Next steps:"
-echo "  1. Add your SSH key to GitHub (printed above)"
-echo "  2. Download LM Studio from https://lmstudio.ai"
-echo "  3. Log out and back in for Steam/Flatpak permissions to fully apply"
-echo "  4. For Roblox, launch 'Sober' from your app menu"
-echo "  5. To use Python 3.14: uv venv --python 3.14"
+sudo dnf copr enable shdwchn10/ryzenadj
+sudo dnf install ryzenadj
+sudo ryzenadj --stapm-limit=14500 --fast-limit=15000 --slow-limit=15000 --tctl-temp=85
+
+sudo tee /etc/systemd/system/ryzenadj.service > /dev/null <<'EOF'
+[Unit]
+Description=RyzenAdj Power Management
+After=multi-user.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/ryzenadj --stapm-limit=15000 --fast-limit=15000 --slow-limit=15000 --tctl-temp=85
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now ryzenadj.service
+
+sudo dnf install tlp 
+sudo systemctl enable --now tlp
