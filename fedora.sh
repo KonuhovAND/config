@@ -195,5 +195,5 @@ EOF
 sudo systemctl daemon-reload
 sudo systemctl enable --now ryzenadj.service
 
-sudo dnf install tlp 
-sudo systemctl enable --now tlp
+sudo systemctl enable --now tuned
+tuned-adm active
