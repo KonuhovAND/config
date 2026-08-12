@@ -10,18 +10,11 @@ echo "=== Installing Throne ==="
 # ==========================================
 # 5. Git Identity & SSH
 # ==========================================
-git config --global user.name 'KonuhovAND'
-git config --global user.email 'andreykonuhov8@gmail.com'
+#git config --global user.name 'KonuhovAND'
+#git config --global user.email 'andreykonuhov8@gmail.com'
+#ssh-keygen -t ed25519 -C "andreykonuhov8@mail.com" -N "" -f ~/.ssh/id_ed25519
+#cat ~/.ssh/id_ed25519.pub
 
-if [ ! -f ~/.ssh/id_ed25519 ]; then
-  ssh-keygen -t ed25519 -C "andreykonuhov8@mail.com" -N "" -f ~/.ssh/id_ed25519
-fi
-
-echo "=== YOUR PUBLIC SSH KEY (Add to GitHub) ==="
-cat ~/.ssh/id_ed25519.pub
-echo "==========================================="
-
-sleep 30
 git clone --separate-git-dir=$HOME/.cfg https://github.com/KonuhovAND/config.git ~/config_files
 # ==========================================
 # Fedora Setup for AMD Ryzen 7 7330U
