@@ -1,86 +1,82 @@
 #!/bin/bash
-# ==========================================
-# 1. Enable Systemd for WSL (Services & Flatpak)
-# ==========================================
-sudo bash -c 'cat <<EOF >> /etc/wsl.conf
-[boot]
-systemd=true
-EOF'
+set -euo pipefail
 
-# ==========================================
-# 2. System Update & Apt Packages
-# ==========================================
-sudo apt update && sudo apt upgrade -y
-sudo apt install -y \
-  curl wget git build-essential tmux \
-  python3 python3-pip python3-venv npm \
-  htop mpv qbittorrent syncthing gnome-tweaks \
-  flatpak alacritty chromium-browser fontconfig unzip
+echo "=== 1. Подготовка хоста Silverblue ==="
+sudo umount /mnt/data 2>/dev/null || true
 
-# Install System Info Tool (Fastfetch or Neofetch fallback)
-sudo apt install -y fastfetch || sudo apt install -y neofetch
+echo "=== 2. Установка Flatpak-приложений ==="
+flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+flatpak install -y flathub \
+  com.spotify.Client \
+  dev.vencord.Vesktop \
+  org.telegram.desktop \
+  md.obsidian.Obsidian \
+  com.usebottles.bottles \
+  com.jeffser.Alpaca \
+  io.dbeaver.DBeaverCommunity
 
-# ==========================================
-# 3. Snap & Tool Installations
-# ==========================================
-# Install Neovim & DBeaver
-sudo snap install nvim --classic
-sudo snap install dbeaver-ce
+echo "=== 3. Установка базовых утилит на хост (rpm-ostree) ==="
+# distrobox и podman в Silverblue часто уже есть, но для верности ставим
+sudo rpm-ostree install alacritty distrobox syncthing || true
 
-# Install Lazygit
-LAZYGIT_VERSION=$(curl -s "https://api.github.com/repos/jesseduffield/lazygit/releases/latest" | grep -Po '"tag_name": "v\K[^"]*')
-curl -sLo lazygit.tar.gz "https://github.com/jesseduffield/lazygit/releases/latest/download/lazygit_${LAZYGIT_VERSION}_Linux_x86_64.tar.gz"
-tar xzf lazygit.tar.gz lazygit
-sudo install lazygit /usr/local/bin
-rm lazygit lazygit.tar.gz
+echo "=== 4. Настройка умного питания Ryzen 7 7730U ==="
+# КРИТИЧНО: Подгружаем модуль MSR, иначе ryzenadj не сможет управлять ваттами!
+echo "msr" | sudo tee /etc/modules-load.d/msr.conf > /dev/null
+sudo modprobe msr
 
-# Install uv (Python Package Manager)
-curl -LsSf https://astral.sh/uv/install.sh | sh
+sudo wget -q https://copr.fedorainfracloud.org/coprs/shdwchn10/ryzenadj/repo/fedora-$(rpm -E %fedora)/shdwchn10-ryzenadj-fedora-$(rpm -E %fedora).repo -O /etc/yum.repos.d/ryzenadj.repo
+sudo rpm-ostree install ryzenadj || true
 
-# ==========================================
-# 4. Install JetBrains Mono Font
-# ==========================================
-mkdir -p ~/.local/share/fonts
-wget -q https://github.com/jetbrains/JetBrainsMono/releases/download/v2.304/JetBrainsMono-2.304.zip -O /tmp/jbmono.zip
-unzip -o /tmp/jbmono.zip -d ~/.local/share/fonts/
-fc-cache -f -v
-rm /tmp/jbmono.zip
+sudo tee /usr/local/bin/ryzen-power.sh > /dev/null <<'EOF'
+#!/bin/bash
+# Ищем любой контроллер сети (AC, ACAD, ADP0...)
+# Если не нашли, считаем что от сети (1).
+STATUS=$(cat /sys/class/power_supply/AC*/online 2>/dev/null | head -n 1 || echo 1)
 
-# ==========================================
-# 5. Install Proxies (Throne & HappProxy)
-# ==========================================
-# Throne Installer
-curl -fsSL https://raw.githubusercontent.com/throneproj/Throne/dev/script/install_linux.py | sudo python3
+if [ "$STATUS" -eq 0 ]; then
+    # 🔋 БАТАРЕЯ: Номинальный TDP (15W). Холодно и тихо.
+    /usr/bin/ryzenadj --stapm-limit=15000 --fast-limit=15000 --slow-limit=15000 --tctl-temp=85
+else
+    # 🔌 СЕТЬ: Буст до 25W. Выжимаем мощь для компиляции и ML.
+    /usr/bin/ryzenadj --stapm-limit=25000 --fast-limit=28000 --slow-limit=25000 --tctl-temp=90
+fi
+EOF
+sudo chmod +x /usr/local/bin/ryzen-power.sh
 
-# HappProxy Debian Package
-HAPP_URL=$(curl -s https://api.github.com/repos/Happ-proxy/happ-desktop/releases/latest | grep -oP 'https://[^\"]*amd64\.deb')
-wget -q "$HAPP_URL" -O /tmp/happ.deb && sudo apt install -y /tmp/happ.deb && rm /tmp/happ.deb
+sudo tee /etc/udev/rules.d/99-ryzen-power.rules > /dev/null <<'EOF'
+SUBSYSTEM=="power_supply", ATTR{type}=="Mains", RUN+="/usr/local/bin/ryzen-power.sh"
+EOF
 
-# ==========================================
-# 6. Flatpak Setup & Apps
-# ==========================================
-sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install -y flathub com.discordapp.Discord
-flatpak install -y flathub com.spotify.Client
-flatpak install -y flathub org.telegram.desktop
-flatpak install -y flathub md.obsidian.Obsidian
+sudo tee /etc/systemd/system/ryzen-power.service > /dev/null <<'EOF'
+[Unit]
+Description=Ryzen Dynamic Power Management
+After=multi-user.target
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/ryzen-power.sh
+RemainAfterExit=yes
+[Install]
+WantedBy=multi-user.target
+EOF
 
-# Enable & Start Syncthing Service
-systemctl --user enable --now syncthing
+sudo systemctl daemon-reload
+sudo systemctl enable ryzen-power.service
+sudo udevadm control --reload-rules
+sudo udevadm trigger
 
-# ==========================================
-# 7. Git Identity & SSH Key Generation
-# ==========================================
-git config --global user.name 'KonuhovAND'
-git config --global user.email 'andreykonuhov8@gmail.com'
+echo "=== 5. Настройка диска (fstab БЕЗ КИРПИЧА) ==="
+sudo mkdir -p /mnt/data
+if ! grep -q "F4C0-4BAE" /etc/fstab; then
+  sudo tee -a /etc/fstab > /dev/null <<'EOF'
+UUID=F4C0-4BAE  /mnt/data  exfat  defaults,uid=1000,gid=1000,rw,umask=000,nofail,x-systemd.automount  0  2
+EOF
+fi
 
-# Generate SSH Key (Press Enter when prompted if using defaults/no passphrase)
-ssh-keygen -t ed25519 -C "andreykonuhov8@mail.com"
+echo "=== 6. Создание Distrobox контейнера ==="
+distrobox create --name fedora-dev --image registry.fedoraproject.org/fedora:latest --yes
 
-# Display Public Key (Copy this into GitHub Settings -> SSH and GPG keys)
-echo "=== YOUR PUBLIC SSH KEY (Add to GitHub) ==="
-cat ~/.ssh/id_ed25519.pub
-echo "==========================================="
-
-# Note: Add the SSH key to GitHub before running the dotfiles clone line below!
-# git clone --separate-git-dir=$HOME/.cfg git@github.com:KonuhovAND/config.git ~/.config
+echo "=============================================================================="
+echo "ХОСТ НАСТРОЕН! ПЕРЕЗАГРУЗИ СИСТЕМУ."
+echo "После ребута зайди в контейнер: distrobox enter fedora-dev"
+echo "И запусти внутри свой toolbox.sh"
+echo "=============================================================================="
