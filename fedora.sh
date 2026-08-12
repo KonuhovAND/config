@@ -212,3 +212,24 @@ EOF
 sudo umount /mnt/data
 sudo systemctl daemon-reload
 sudo mount -a
+
+
+mkdir Code
+cd Code 
+git clone git@github.com:KonuhovAND/django_react_spendings.git 
+cd django_react_spendings
+uv venv 
+uv pip install req.txt
+cd frontend/
+rm -rf node_modules package-lock.json
+npm cache clean --force
+npm install
+npm start
+
+cd ~/Code/
+
+git clone git@github.com:KonuhovAND/PythonML.git
+cd PythonMl
+uv venv
+uv pip install req.txt
+cd
