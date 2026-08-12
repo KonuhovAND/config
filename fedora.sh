@@ -43,6 +43,16 @@ sudo dnf install -y \
   feh \
   fastfetch || sudo dnf install -y neofetch
 
+
+git clone https://github.com/LazyVim/starter ~/.config/nvim
+rm -rf ~/.config/nvim/.git
+
+~/.config/tmux/tmux.conf
+mkdir -p ~/.config/tmux/tmux.conf && cat > ~/.config/tmux/tmux.conf <<'EOF'
+bind '"' split-window -c "#{pane_current_path}"
+bind % split-window -h -c "#{pane_current_path}"
+bind 'c' new-window -c "#{pane_current_path}"
+EOF
 # ==========================================
 # 3. Languages & Runtimes
 # ==========================================
