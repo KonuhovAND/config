@@ -203,4 +203,12 @@ sudo systemctl enable --now ryzenadj.service
 sudo systemctl enable --now tuned
 tuned-adm active
 
+lsblk -f
+sudo mkdir -p /mnt/data
+sudo tee -a /etc/fstab > /dev/null <<'EOF'
+UUID=F4C0-4BAE  /mnt/data  exfat  defaults,uid=1000,gid=1000,rw,umask=000  0  0
+EOF
 
+sudo umount /mnt/data
+sudo systemctl daemon-reload
+sudo mount -a
