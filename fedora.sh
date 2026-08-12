@@ -105,7 +105,7 @@ sudo dnf install -y alacritty
 
 mkdir -p ~/.config/alacritty && cat > ~/.config/alacritty/alacritty.toml <<'EOF'
 [font]
-size = 12.0
+size = 13.0
 
 [font.normal]
 family = "JetBrainsMono Nerd Font"
