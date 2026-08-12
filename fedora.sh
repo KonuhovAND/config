@@ -71,7 +71,7 @@ sudo dnf install -y \
   vulkan-loader vulkan-loader.i686 \
   amd-gpu-firmware \
   thermald
-
+sudo dnf install @virtualization
 # Enable thermal management
 sudo systemctl enable --now thermald
 
@@ -147,8 +147,8 @@ systemctl --user enable --now syncthing
 # ==========================================
 # 12. Ollama (Local LLMs)
 # ==========================================
-echo "=== Installing Ollama ==="
-curl -fsSL https://ollama.com/install.sh | sh
+#echo "=== Installing Ollama ==="
+#curl -fsSL https://ollama.com/install.sh | sh
 
 # ==========================================
 # 13. Flatpak Setup & GUI Apps
@@ -163,11 +163,14 @@ flatpak install -y flathub \
   org.telegram.desktop \
   md.obsidian.Obsidian \
   com.usebottles.bottles \
+  org.vinegarhq.Sober \
+  org.winehq.Wine \
+  com.jeffser.Alpaca \ 
   io.dbeaver.DBeaverCommunity
 
 sudo dnf copr enable shdwchn10/ryzenadj
 sudo dnf install ryzenadj
-sudo ryzenadj --stapm-limit=14500 --fast-limit=15000 --slow-limit=15000 --tctl-temp=85
+sudo ryzenadj --stapm-limit=15000 --fast-limit=15000 --slow-limit=15000 --tctl-temp=85
 
 sudo tee /etc/systemd/system/ryzenadj.service > /dev/null <<'EOF'
 [Unit]
