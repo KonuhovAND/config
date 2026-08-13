@@ -1,9 +1,7 @@
-#!/bin/bash
+sudo apt update && sudo apt upgrade -y && sudo apt install -y curl git build-essential python3 python3-pip python3-venv tmux snapd feh && curl -fsSL https://deb.nodesource.com/setup_lts.x | sudo -E bash - && sudo apt install -y nodejs && sudo snap install dbeaver-ce --classic
 
-sudo apt update
-sudo apt install snapd python3 tmux
-sudo apt install -y npm feh
-sudo snap install neovim --classic
-git clone https://github.com/LazyVim/starter ~/.config/nvim
-sudo snap install dbeaver-ce --classic
-git clone https://github.com/KonuhovAND/config.git
+
+git config --global user.name 'KonuhovAND'
+git config --global user.email 'andreykonuhov8@gmail.com'
+ssh-keygen -t ed25519 -C "andreykonuhov8@mail.com" -N "" -f ~/.ssh/id_ed25519
+cat ~/.ssh/id_ed25519.pub
