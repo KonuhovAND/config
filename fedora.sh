@@ -10,10 +10,10 @@ echo "=== Installing Throne ==="
 # ==========================================
 # 5. Git Identity & SSH
 # ==========================================
-#git config --global user.name 'KonuhovAND'
-#git config --global user.email 'andreykonuhov8@gmail.com'
-#ssh-keygen -t ed25519 -C "andreykonuhov8@mail.com" -N "" -f ~/.ssh/id_ed25519
-#cat ~/.ssh/id_ed25519.pub
+git config --global user.name 'KonuhovAND'
+git config --global user.email 'andreykonuhov8@gmail.com'
+ssh-keygen -t ed25519 -C "andreykonuhov8@mail.com" -N "" -f ~/.ssh/id_ed25519
+cat ~/.ssh/id_ed25519.pub
 
 git clone --separate-git-dir=$HOME/.cfg https://github.com/KonuhovAND/config.git ~/config_files
 # ==========================================
