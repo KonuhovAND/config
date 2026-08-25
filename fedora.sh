@@ -18,7 +18,25 @@ echo "=== Enabling RPM Fusion ==="
 sudo dnf install -y \
   "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm" \
   "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm"
+# ==========================================
+# Happ Desktop
+# ==========================================
 
+echo "=== Installing Happ Desktop 4.1.1 ==="
+
+if [[ "$(uname -m)" != "x86_64" ]]; then
+    echo "Error: this Happ package is for x86_64 systems."
+    echo "Detected architecture: $(uname -m)"
+    exit 1
+fi
+
+HAPP_VERSION="4.1.1"
+HAPP_RPM="/tmp/Happ.linux.x64.rpm"
+HAPP_URL="https://github.com/Happ-proxy/happ-desktop/releases/download/${HAPP_VERSION}/Happ.linux.x64.rpm"
+
+curl -fL "$HAPP_URL" -o "$HAPP_RPM"
+sudo dnf install -y "$HAPP_RPM"
+rm -f "$HAPP_RPM"
 # ==========================================
 # Core packages
 # ==========================================
@@ -246,25 +264,7 @@ EOF
     fi
 done
 
-# ==========================================
-# Happ Desktop
-# ==========================================
 
-echo "=== Installing Happ Desktop 4.1.1 ==="
-
-if [[ "$(uname -m)" != "x86_64" ]]; then
-    echo "Error: this Happ package is for x86_64 systems."
-    echo "Detected architecture: $(uname -m)"
-    exit 1
-fi
-
-HAPP_VERSION="4.1.1"
-HAPP_RPM="/tmp/Happ.linux.x64.rpm"
-HAPP_URL="https://github.com/Happ-proxy/happ-desktop/releases/download/${HAPP_VERSION}/Happ.linux.x64.rpm"
-
-curl -fL "$HAPP_URL" -o "$HAPP_RPM"
-sudo dnf install -y "$HAPP_RPM"
-rm -f "$HAPP_RPM"
 
 # ==========================================
 # Syncthing
