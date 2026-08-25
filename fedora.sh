@@ -1,235 +1,413 @@
-#!/bin/bash
+#!/usr/bin/env bash
 set -euo pipefail
 
 # ==========================================
-# 11. Throne Proxy
-# ==========================================
-echo "=== Installing Throne ==="
-#curl -fsSL https://raw.githubusercontent.com/throneproj/Throne/dev/script/install_linux.py | sudo python3
-
-# ==========================================
-# 5. Git Identity & SSH
-# ==========================================
-git config --global user.name 'KonuhovAND'
-git config --global user.email 'andreykonuhov8@gmail.com'
-ssh-keygen -t ed25519 -C "andreykonuhov8@mail.com" -N "" -f ~/.ssh/id_ed25519
-cat ~/.ssh/id_ed25519.pub
-
-git clone --separate-git-dir=$HOME/.cfg https://github.com/KonuhovAND/config.git ~/config_files
-# ==========================================
-# Fedora Setup for AMD Ryzen 7 7330U
+# Fedora Setup
+# Ryzen 7 7730U
 # ==========================================
 
-echo "=== Updating System ==="
+echo "=== Updating system ==="
 sudo dnf upgrade --refresh -y
 
 # ==========================================
-# 1. Enable RPM Fusion (Free & Non-Free)
-# Required for Steam, FFmpeg codecs, and drivers
+# RPM Fusion
 # ==========================================
+
 echo "=== Enabling RPM Fusion ==="
+
 sudo dnf install -y \
-  https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm \
-  https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm
+  "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm" \
+  "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm"
 
 # ==========================================
-# 2. Core Development & CLI Tools
+# Core packages
 # ==========================================
-echo "=== Installing Core Tools ==="
+
+echo "=== Installing core tools ==="
+
 sudo dnf install -y \
-  git curl wget vim neovim tmux htop \
-  fontconfig unzip p7zip p7zip-plugins \
-  fzf zsh \
+  git \
+  curl \
+  wget \
+  vim \
+  neovim \
+  htop \
+  fontconfig \
+  unzip \
+  p7zip \
+  p7zip-plugins \
+  fzf \
+  jq \
+  zsh \
   feh \
-  fastfetch || sudo dnf install -y neofetch
+  fastfetch \
+  kitty \
+  nodejs \
+  npm \
+  python3 \
+  python3-pip \
+  gcc \
+  gcc-c++ \
+  make \
+  cmake
 
-
-git clone https://github.com/LazyVim/starter ~/.config/nvim
-rm -rf ~/.config/nvim/.git
-
-~/.config/tmux/tmux.conf
-mkdir -p ~/.config/tmux/tmux.conf && cat > ~/.config/tmux/tmux.conf <<'EOF'
-bind '"' split-window -c "#{pane_current_path}"
-bind % split-window -h -c "#{pane_current_path}"
-bind 'c' new-window -c "#{pane_current_path}"
-EOF
 # ==========================================
-# 3. Languages & Runtimes
+# LazyVim
 # ==========================================
-echo "=== Installing Node.js, Python, and Build Tools ==="
-sudo dnf install -y \
-  nodejs npm \
-  python3 python3-pip \
-  gcc gcc-c++ make cmake
 
-# Install uv (Python version & package manager)
+echo "=== Configuring Neovim ==="
+
+if [[ ! -d "$HOME/.config/nvim" ]]; then
+    git clone https://github.com/LazyVim/starter "$HOME/.config/nvim"
+    rm -rf "$HOME/.config/nvim/.git"
+else
+    echo "Neovim configuration already exists; skipping LazyVim setup."
+fi
+
+# ==========================================
+# Python uv
+# ==========================================
+
 echo "=== Installing uv ==="
-curl -LsSf https://astral.sh/uv/install.sh | sh
+
+if ! command -v uv >/dev/null 2>&1; then
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+fi
+
 export PATH="$HOME/.local/bin:$PATH"
 
-# Install Python 3.14 via uv (Fedora repos may lag behind latest CPython)
-uv python install 3.14
+# Install Python 3.14 if uv supports it
+uv python install 3.14 || true
 
 # ==========================================
-# 4. AMD Ryzen 7330U / Radeon Graphics Setup
+# AMD graphics and virtualization
 # ==========================================
-echo "=== Configuring AMD Radeon Graphics ==="
+
+echo "=== Configuring AMD graphics ==="
+
 sudo dnf install -y \
   mesa-dri-drivers \
   mesa-va-drivers-freeworld \
   mesa-vulkan-drivers \
-  vulkan-loader vulkan-loader.i686 \
+  vulkan-loader \
+  vulkan-loader.i686 \
   amd-gpu-firmware \
   thermald
-sudo dnf install @virtualization
-# Enable thermal management
+
+sudo dnf install -y @virtualization
+
 sudo systemctl enable --now thermald
 
-# Gaming performance tools
+# Gaming tools
 sudo dnf install -y gamemode mangohud
 
 # ==========================================
-# 6. Terminal / CLI Apps from Repos
+# Applications
 # ==========================================
-echo "=== Installing Lazygit, qBittorrent, mpv ==="
+
+echo "=== Installing applications ==="
+
 sudo dnf install -y qbittorrent mpv
+
 sudo dnf copr enable -y atim/lazygit
 sudo dnf install -y lazygit
 
 # ==========================================
-# 7. Google Chrome
+# Google Chrome
 # ==========================================
+
 echo "=== Installing Google Chrome ==="
+
 sudo dnf install -y fedora-workstation-repositories
 sudo dnf config-manager setopt google-chrome.enabled=1
 sudo dnf install -y google-chrome-stable
 
+# ==========================================
+# Fonts
+# ==========================================
 
-# ==========================================
-# 9. Fonts
-# ==========================================
-echo "=== Installing JetBrains Mono ==="
+echo "=== Installing JetBrains Mono Nerd Font ==="
+
 sudo dnf install -y jetbrains-mono-fonts
-fc-cache -f -v
-sudo dnf install -y alacritty
 
-mkdir -p ~/.config/alacritty && cat > ~/.config/alacritty/alacritty.toml <<'EOF'
-[font]
-size = 13.0
+mkdir -p "$HOME/.local/share/fonts/JetBrainsMono"
 
-[font.normal]
-family = "JetBrainsMono Nerd Font"
-style = "Regular"
+curl -fL \
+  https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip \
+  -o /tmp/JetBrainsMono.zip
 
-[font.bold]
-family = "JetBrains Mono"
-style = "Bold"
+unzip -o /tmp/JetBrainsMono.zip \
+  -d "$HOME/.local/share/fonts/JetBrainsMono"
 
-[font.italic]
-family = "JetBrains Mono"
-style = "Italic"
+fc-cache -f
 
-[font.bold_italic]
-family = "JetBrains Mono"
-style = "Bold Italic"
+# ==========================================
+# Kitty configuration
+# ==========================================
 
-# Optional: a bit of extra line spacing looks nicer for coding
-[font.offset]
-x = 0
-y = 1
+echo "=== Configuring Kitty ==="
+
+mkdir -p "$HOME/.config/kitty"
+
+cat > "$HOME/.config/kitty/kitty.conf" <<'EOF'
+font_family JetBrainsMono Nerd Font
+bold_font JetBrainsMono Nerd Font
+italic_font JetBrainsMono Nerd Font
+bold_italic_font JetBrainsMono Nerd Font
+
+font_size 13.0
+
+enable_audio_bell no
+confirm_os_window_close 0
+
+# Required by tabswitcher
+allow_remote_control yes
+
+# Open a new tab in the current directory
+map ctrl+shift+t launch --type=tab --cwd=current
+
+# Open a new tab in the parent directory
+map ctrl+shift+shift+t launch --type=tab --cwd=last_reported
 EOF
 
+# ==========================================
+# Kitty helper commands
+# ==========================================
 
-mkdir -p ~/.local/share/fonts
-cd /tmp
-curl -LO https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip
-unzip -o JetBrainsMono.zip -d ~/.local/share/fonts/JetBrainsMono
-fc-cache -f
-cd
+echo "=== Installing Kitty helper commands ==="
+
+mkdir -p "$HOME/.local/bin"
+
+cat > "$HOME/.local/bin/tabswitcher" <<'EOF'
+#!/usr/bin/env bash
+set -euo pipefail
+
+if ! command -v kitty >/dev/null 2>&1; then
+    echo "Error: kitty is not installed."
+    exit 1
+fi
+
+if ! command -v jq >/dev/null 2>&1; then
+    echo "Error: jq is not installed."
+    exit 1
+fi
+
+if ! command -v fzf >/dev/null 2>&1; then
+    echo "Error: fzf is not installed."
+    exit 1
+fi
+
+if [[ -z "${KITTY_WINDOW_ID:-}" ]]; then
+    echo "Error: tabswitcher must be run inside Kitty."
+    exit 1
+fi
+
+selected="$(
+    kitty @ ls |
+        jq -r '
+            .[] |
+            .tabs[] |
+            [
+                .id,
+                (.title // "Untitled")
+            ] |
+            @tsv
+        ' |
+        fzf --height=40% --layout=reverse --border --prompt="Tabs> "
+)" || exit 0
+
+tab_id="${selected%%$'\t'*}"
+
+if [[ -n "$tab_id" ]]; then
+    kitty @ focus-tab --match "id:$tab_id"
+fi
+EOF
+
+chmod +x "$HOME/.local/bin/tabswitcher"
+
+# Add shell commands to Bash and Zsh
+for shell_rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
+    touch "$shell_rc"
+
+    if ! grep -q 'function new_tab_parent' "$shell_rc"; then
+        cat >> "$shell_rc" <<'EOF'
+
+# Kitty helpers
+new_tab() {
+    kitty @ launch --type=tab --cwd="$PWD"
+}
+
+new_tab_parent() {
+    kitty @ launch --type=tab --cwd="$(dirname "$PWD")"
+}
+
+alias tabswitcher="$HOME/.local/bin/tabswitcher"
+EOF
+    fi
+done
 
 # ==========================================
-# 10. Syncthing
+# Happ Desktop
 # ==========================================
+
+echo "=== Installing Happ Desktop 4.1.1 ==="
+
+if [[ "$(uname -m)" != "x86_64" ]]; then
+    echo "Error: this Happ package is for x86_64 systems."
+    echo "Detected architecture: $(uname -m)"
+    exit 1
+fi
+
+HAPP_VERSION="4.1.1"
+HAPP_RPM="/tmp/Happ.linux.x64.rpm"
+HAPP_URL="https://github.com/Happ-proxy/happ-desktop/releases/download/${HAPP_VERSION}/Happ.linux.x64.rpm"
+
+curl -fL "$HAPP_URL" -o "$HAPP_RPM"
+sudo dnf install -y "$HAPP_RPM"
+rm -f "$HAPP_RPM"
+
+# ==========================================
+# Syncthing
+# ==========================================
+
 echo "=== Installing Syncthing ==="
+
 sudo dnf install -y syncthing
 systemctl --user enable --now syncthing
 
 # ==========================================
-# 12. Ollama (Local LLMs)
+# Flatpak
+# Wine, Bottles, and Sober intentionally removed
 # ==========================================
-#echo "=== Installing Ollama ==="
-#curl -fsSL https://ollama.com/install.sh | sh
 
-# ==========================================
-# 13. Flatpak Setup & GUI Apps
-# ==========================================
-echo "=== Setting up Flatpak ==="
-sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
+echo "=== Configuring Flatpak ==="
 
-echo "=== Installing Flatpak Apps ==="
+sudo flatpak remote-add --if-not-exists \
+  flathub \
+  https://dl.flathub.org/repo/flathub.flatpakrepo
+
+echo "=== Installing Flatpak applications ==="
+
 flatpak install -y flathub \
   com.spotify.Client \
   com.discordapp.Discord \
   org.telegram.desktop \
   md.obsidian.Obsidian \
-  com.usebottles.bottles \
-  org.vinegarhq.Sober \
-  org.winehq.Wine \
-  com.jeffser.Alpaca \ 
+  com.jeffser.Alpaca \
   io.dbeaver.DBeaverCommunity
 
-sudo dnf copr enable shdwchn10/ryzenadj
-sudo dnf install ryzenadj
-sudo ryzenadj --stapm-limit=15000 --fast-limit=15000 --slow-limit=15000 --tctl-temp=85
+# ==========================================
+# RyzenAdj
+# ==========================================
 
-sudo tee /etc/systemd/system/ryzenadj.service > /dev/null <<'EOF'
+echo "=== Installing RyzenAdj ==="
+
+sudo dnf copr enable -y shdwchn10/ryzenadj
+sudo dnf install -y ryzenadj
+
+RYZENADJ_BIN="$(command -v ryzenadj)"
+
+POWER_LIMIT=8000
+POWER_LIMIT2=18000
+POWER_LIMIT3=15000
+
+echo "=== Applying Ryzen power limits ==="
+echo "STAPM limit: ${POWER_LIMIT} mW"
+echo "Fast limit:  ${POWER_LIMIT2} mW"
+echo "Slow limit:  ${POWER_LIMIT3} mW"
+
+sudo "$RYZENADJ_BIN" \
+  -a "$POWER_LIMIT" \
+  -b "$POWER_LIMIT2" \
+  -c "$POWER_LIMIT3"
+
+echo
+echo "=== Current Ryzen power settings ==="
+sudo "$RYZENADJ_BIN" -i
+
+sudo tee /etc/systemd/system/ryzen-power-limit.service >/dev/null <<EOF
 [Unit]
-Description=RyzenAdj Power Management
+Description=Set RyzenAdj power limits
 After=multi-user.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/ryzenadj --stapm-limit=15000 --fast-limit=15000 --slow-limit=15000 --tctl-temp=85
+ExecStart=$RYZENADJ_BIN -a $POWER_LIMIT -b $POWER_LIMIT2 -c $POWER_LIMIT3
 RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
 EOF
 
-
 sudo systemctl daemon-reload
-sudo systemctl enable --now ryzenadj.service
+sudo systemctl enable --now ryzen-power-limit.service
+
+# ==========================================
+# tuned
+# ==========================================
+
+echo "=== Enabling tuned ==="
 
 sudo systemctl enable --now tuned
-tuned-adm active
+tuned-adm active || true
 
-lsblk -f
-sudo mkdir -p /mnt/data
-sudo tee -a /etc/fstab > /dev/null <<'EOF'
-UUID=F4C0-4BAE  /mnt/data  exfat  defaults,uid=1000,gid=1000,rw,umask=000  0  0
+# ==========================================
+# Mount data partition
+# ==========================================
+
+echo "=== Configuring /mnt/data ==="
+
+DATA_UUID="93137e69-f559-468b-b045-57576895127c"
+DATA_MOUNT="/mnt/data"
+
+DATA_DEVICE="$(sudo blkid -U "$DATA_UUID" 2>/dev/null || true)"
+
+if [[ -z "$DATA_DEVICE" ]]; then
+    echo "Error: no block device was found with UUID $DATA_UUID"
+    echo "Check the UUID with:"
+    echo "  lsblk -f"
+    echo "  sudo blkid"
+    exit 1
+fi
+
+DATA_FILESYSTEM="$(sudo blkid -o value -s TYPE "$DATA_DEVICE")"
+
+if [[ "$DATA_FILESYSTEM" != "ext4" ]]; then
+    echo "Error: $DATA_DEVICE has filesystem type '$DATA_FILESYSTEM', not ext4."
+    exit 1
+fi
+
+sudo mkdir -p "$DATA_MOUNT"
+
+# Back up fstab before modifying it
+sudo cp /etc/fstab "/etc/fstab.backup.$(date +%Y%m%d-%H%M%S)"
+
+# Unmount it if an old entry is currently mounted
+sudo umount "$DATA_MOUNT" 2>/dev/null || true
+
+# Remove old /mnt/data entries, including the previous exFAT entry
+sudo sed -i '\|[[:space:]]/mnt/data[[:space:]]|d' /etc/fstab
+
+sudo tee -a /etc/fstab >/dev/null <<EOF
+UUID=$DATA_UUID $DATA_MOUNT ext4 defaults,nofail,x-gvfs-show 0 2
 EOF
 
-sudo umount /mnt/data
-sudo systemctl daemon-reload
-sudo mount -a
+echo "=== Checking /etc/fstab ==="
+sudo findmnt --verify
 
+echo "=== Mounting /mnt/data ==="
+sudo mount "$DATA_MOUNT"
 
-mkdir Code
-cd Code 
-git clone git@github.com:KonuhovAND/django_react_spendings.git 
-cd django_react_spendings
-uv venv 
-uv pip install req.txt
-cd frontend/
-rm -rf node_modules package-lock.json
-npm cache clean --force
-npm install
-npm start
+echo "=== Mounted data partition ==="
+findmnt "$DATA_MOUNT"
 
-cd ~/Code/
-
-git clone git@github.com:KonuhovAND/PythonML.git
-cd PythonMl
-uv venv
-uv pip install req.txt
-cd
+echo
+echo "Setup completed successfully."
+echo
+echo "Kitty commands:"
+echo "  tabswitcher       - interactively switch Kitty tabs"
+echo "  new_tab           - open a tab in the current directory"
+echo "  new_tab_parent    - open a tab in the parent directory"
+echo
+echo "Data partition:"
+echo "  $DATA_DEVICE -> $DATA_MOUNT"
