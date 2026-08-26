@@ -460,7 +460,7 @@ echo
 echo "Data partition:"
 echo "  $DATA_DEVICE -> $DATA_MOUNT"
 
-cat '~/.bashrc'  << 'EOF'
+cat >>  '~/.bashrc'  << 'EOF'
 alias snapshots-list='sudo snapper -c root list'
 alias makesnap='sudo snapper -c root create --description '
 alias deletesnap='sudo snapper -c root delete '
