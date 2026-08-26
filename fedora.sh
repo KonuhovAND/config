@@ -488,6 +488,9 @@ os-age() {
     echo "OS age: $days days"
 }
 EOF
+sudo dnf install iftop
+sudo iftop
+
 sudo dnf install snapper
 sudo snapper -c root create-config /
 sudo snapper -c root create --description "Before changes"
