@@ -464,7 +464,7 @@ cat >>  '~/.bashrc'  << 'EOF'
 alias snapshots-list='sudo snapper -c root list'
 alias makesnap='sudo snapper -c root create --description '
 alias deletesnap='sudo snapper -c root delete '
-alias wats="watch -n1 'sudo ryzenadj --info | grep -E \"PPT VALUE | STAPM VALUE | THM VALUE\"' "
+alias mtop='bash -c '\''IF=$(ip route | awk "/default/ {print \$5; exit}"); while true; do clear; echo "=== Ryzen ==="; sudo ryzenadj --info | grep -E "PPT VALUE|STAPM VALUE|THM VALUE"; echo; echo "=== RAM ==="; free -h | awk "/Mem:/ {printf \"Used: %s / %s (%.1f%%)\\n\",\$3,\$2,(\$3/\$2)*100}"; echo; echo "=== CPU clock ==="; awk -F: "/cpu MHz/ {s+=\$2;n++} END {printf \"Average: %.0f MHz\\n\",s/n}" /proc/cpuinfo; echo; echo "=== Temperatures ==="; sensors 2>/dev/null | grep -Ei "cpu|tctl|edge|junction|gpu|amdgpu"; echo; echo "=== Network ==="; ip -s link show "\$IF" | awk "/RX:/ {rx=\$2} /TX:/ {tx=\$2} END {print \"Interface: \" ENVIRON[\"IF\"]}"; sleep 1; done'\'' '
 
 EOF
 cat >> ~/.bashrc <<'EOF'
