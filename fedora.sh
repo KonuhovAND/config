@@ -495,11 +495,11 @@ mtop() {
 
         echo
         echo "=== Network ($IF) ==="
-        R1=$(cat /sys/class/net/"$IF"/statistics/rx_bytes)
-        T1=$(cat /sys/class/net/"$IF"/statistics/tx_bytes)
+        R1=$(cat "/sys/class/net/$IF/statistics/rx_bytes")
+        T1=$(cat "/sys/class/net/$IF/statistics/tx_bytes")
         sleep 1
-        R2=$(cat /sys/class/net/"$IF"/statistics/rx_bytes)
-        T2=$(cat /sys/class/net/"$IF"/statistics/tx_bytes)
+        R2=$(cat "/sys/class/net/$IF/statistics/rx_bytes")
+        T2=$(cat "/sys/class/net/$IF/statistics/tx_bytes")
 
         awk -v r=$((R2-R1)) -v t=$((T2-T1)) \
             'BEGIN {printf "Download: %.1f KB/s | Upload: %.1f KB/s\n", r/1024, t/1024}'
