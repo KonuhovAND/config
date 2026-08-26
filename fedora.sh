@@ -464,6 +464,7 @@ cat >>  '~/.bashrc'  << 'EOF'
 alias snapshots-list='sudo snapper -c root list'
 alias makesnap='sudo snapper -c root create --description '
 alias deletesnap='sudo snapper -c root delete '
+alias wats='watch -n1 'sudo ryzenadj --info | grep -E "PPT VALUE|STAPM VALUE|THM VALUE"' '
 EOF
 cat >> ~/.bashrc <<'EOF'
 
