@@ -465,7 +465,27 @@ alias snapshots-list='sudo snapper -c root list'
 alias makesnap='sudo snapper -c root create --description '
 alias deletesnap='sudo snapper -c root delete '
 EOF
+cat >> ~/.bashrc <<'EOF'
 
+os-age-start() {
+    date +%s > "$HOME/.os-start-time"
+    echo "OS age counter started: $(date '+%Y-%m-%d %H:%M:%S')"
+}
+
+os-age() {
+    if [[ ! -f "$HOME/.os-start-time" ]]; then
+        echo "Counter not started. Run: os-age-start"
+        return 1
+    fi
+
+    local start now days
+    start=$(cat "$HOME/.os-start-time")
+    now=$(date +%s)
+    days=$(( (now - start) / 86400 ))
+
+    echo "OS age: $days days"
+}
+EOF
 sudo dnf install snapper
 sudo snapper -c root create-config /
 sudo snapper -c root create --description "Before changes"
