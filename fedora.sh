@@ -471,7 +471,7 @@ sed -i '/^alias mtop=/d' ~/.bashrc
 
 cat >> ~/.bashrc <<'EOF'
 mtop() {
-    IF=$(ip route | awk '/default/ {print $5; exit}')
+    IF=$(ip route get 1.1.1.1 2>/dev/null | awk '{for (i=1;i<=NF;i++) if ($i=="dev") {print $(i+1); exit}}')
     while true; do
         clear
         echo "=== Ryzen power ==="
