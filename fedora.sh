@@ -172,28 +172,14 @@ font_family JetBrainsMono Nerd Font
 bold_font JetBrainsMono Nerd Font
 italic_font JetBrainsMono Nerd Font
 bold_italic_font JetBrainsMono Nerd Font
-
 font_size 13.0
-
 enable_audio_bell no
 confirm_os_window_close 0
-
-# Required by tabswitcher
 allow_remote_control yes
-
-# New tab in the current directory
 map ctrl+shift+t launch --type=tab --cwd=current
-
-# New tab in the parent directory
-map ctrl+shift+p launch --type=tab --cwd=last_reported
-
-# Vertical split in the current directory
+map ctrl+shift+shift+t launch --type=tab --cwd=last_reported
 map ctrl+shift+v launch --location=vsplit --cwd=current
-
-# Optional horizontal split
 map ctrl+shift+h launch --location=hsplit --cwd=current
-
-# Switch directly to tabs with Alt+number
 map alt+1 goto_tab 1
 map alt+2 goto_tab 2
 map alt+3 goto_tab 3
@@ -203,9 +189,51 @@ map alt+6 goto_tab 6
 map alt+7 goto_tab 7
 map alt+8 goto_tab 8
 map alt+9 goto_tab 9
-
-# Interactive tab switcher
 map alt+0 launch --type=background $HOME/.local/bin/tabswitcher
+disable_ligatures never
+background_opacity 0.94
+dynamic_background_opacity yes
+window_padding_width 12
+window_padding_height 10
+hide_window_decorations yes
+draw_minimal_borders yes
+cursor_shape beam
+cursor_beam_thickness 2.0
+cursor_blink_interval 0.6
+tab_bar_edge top
+tab_bar_style powerline
+tab_powerline_style slanted
+tab_title_template "{index}: {title}"
+active_tab_font_style bold
+inactive_tab_font_style normal
+visual_bell_duration 0.0
+foreground              #CDD6F4
+background              #1E1E2E
+selection_foreground    #1E1E2E
+selection_background    #F5E0E6
+cursor                  #F5E0E6
+cursor_text_color       #1E1E2E
+url_color               #89B4FA
+active_tab_foreground   #1E1E2E
+active_tab_background   #CBA6F7
+inactive_tab_foreground #A6ADC8
+inactive_tab_background #313244
+color0                  #45475A
+color1                  #F38BA8
+color2                  #A6E3A1
+color3                  #F9E2AF
+color4                  #89B4FA
+color5                  #F5C2E7
+color6                  #94E2D5
+color7                  #BAC2DE
+color8                  #585B70
+color9                  #F38BA8
+color10                 #A6E3A1
+color11                 #F9E2AF
+color12                 #89B4FA
+color13                 #F5C2E7
+color14                 #94E2D5
+color15                 #A6ADC8
 EOF
 
 # ==========================================
