@@ -348,6 +348,10 @@ flatpak install -y flathub \
 # RyzenAdj
 # ==========================================
 
+# ==========================================
+# RyzenAdj with automatic AC/Battery limits
+# ==========================================
+
 echo "=== Installing RyzenAdj ==="
 
 sudo dnf copr enable -y shdwchn10/ryzenadj
@@ -355,40 +359,101 @@ sudo dnf install -y ryzenadj
 
 RYZENADJ_BIN="$(command -v ryzenadj)"
 
-POWER_LIMIT=8000
-POWER_LIMIT2=18000
-POWER_LIMIT3=15000
+if [[ -z "$RYZENADJ_BIN" ]]; then
+    echo "Error: ryzenadj was not found."
+    exit 1
+fi
 
-echo "=== Applying Ryzen power limits ==="
-echo "STAPM limit: ${POWER_LIMIT} mW"
-echo "Fast limit:  ${POWER_LIMIT2} mW"
-echo "Slow limit:  ${POWER_LIMIT3} mW"
+# Power limits in milliwatts
+# AC:      STAPM 8 W, Fast 18 W, Slow 15 W
+# Battery: STAPM 6 W, Fast 15 W, Slow 12 W
 
-sudo "$RYZENADJ_BIN" \
-  -a "$POWER_LIMIT" \
-  -b "$POWER_LIMIT2" \
-  -c "$POWER_LIMIT3"
+AC_STAPM=8000
+AC_FAST=18000
+AC_SLOW=15000
 
-echo
-echo "=== Current Ryzen power settings ==="
-sudo "$RYZENADJ_BIN" -i
+BATTERY_STAPM=6000
+BATTERY_FAST=15000
+BATTERY_SLOW=12000
 
-sudo tee /etc/systemd/system/ryzen-power-limit.service >/dev/null <<EOF
+sudo tee /usr/local/sbin/ryzen-power-limit >/dev/null <<EOF
+#!/usr/bin/env bash
+set -euo pipefail
+
+RYZENADJ_BIN="$RYZENADJ_BIN"
+
+AC_STAPM=$AC_STAPM
+AC_FAST=$AC_FAST
+AC_SLOW=$AC_SLOW
+
+BATTERY_STAPM=$BATTERY_STAPM
+BATTERY_FAST=$BATTERY_FAST
+BATTERY_SLOW=$BATTERY_SLOW
+
+# Detect whether any non-battery power supply is online.
+ON_AC=0
+
+for supply in /sys/class/power_supply/*; do
+    [[ -d "\$supply" ]] || continue
+
+    type="\$(cat "\$supply/type" 2>/dev/null || true)"
+
+    if [[ "\$type" != "Battery" ]] &&
+       [[ "\$(cat "\$supply/online" 2>/dev/null || echo 0)" == "1" ]]; then
+        ON_AC=1
+        break
+    fi
+done
+
+if [[ "\$ON_AC" == "1" ]]; then
+    MODE="AC"
+    STAPM="\$AC_STAPM"
+    FAST="\$AC_FAST"
+    SLOW="\$AC_SLOW"
+else
+    MODE="Battery"
+    STAPM="\$BATTERY_STAPM"
+    FAST="\$BATTERY_FAST"
+    SLOW="\$BATTERY_SLOW"
+fi
+
+echo "Applying RyzenAdj limits for \$MODE:"
+echo "  STAPM: \$((STAPM / 1000)) W"
+echo "  Fast:  \$((FAST / 1000)) W"
+echo "  Slow:  \$((SLOW / 1000)) W"
+
+"\$RYZENADJ_BIN" -a "\$STAPM" -b "\$FAST" -c "\$SLOW"
+EOF
+
+sudo chmod 755 /usr/local/sbin/ryzen-power-limit
+
+sudo tee /etc/systemd/system/ryzen-power-limit.service >/dev/null <<'EOF'
 [Unit]
-Description=Set RyzenAdj power limits
+Description=Set RyzenAdj power limits based on AC or battery state
 After=multi-user.target
 
 [Service]
 Type=oneshot
-ExecStart=$RYZENADJ_BIN -a $POWER_LIMIT -b $POWER_LIMIT2 -c $POWER_LIMIT3
-RemainAfterExit=yes
+ExecStart=/usr/local/sbin/ryzen-power-limit
+EOF
 
-[Install]
-WantedBy=multi-user.target
+# Re-run the service whenever AC/battery status changes
+sudo tee /etc/udev/rules.d/99-ryzen-power-limit.rules >/dev/null <<'EOF'
+ACTION=="change", SUBSYSTEM=="power_supply", TAG+="systemd", ENV{SYSTEMD_WANTS}+="ryzen-power-limit.service"
 EOF
 
 sudo systemctl daemon-reload
-sudo systemctl enable --now ryzen-power-limit.service
+sudo udevadm control --reload-rules
+
+# Apply the correct limit immediately
+sudo systemctl start ryzen-power-limit.service
+
+# Apply the correct limit during boot
+sudo systemctl enable ryzen-power-limit.service
+
+echo
+echo "=== Current Ryzen power settings ==="
+sudo ryzenadj -i
 
 # ==========================================
 # tuned
