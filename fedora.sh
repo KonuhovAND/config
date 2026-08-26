@@ -464,9 +464,51 @@ cat >>  '~/.bashrc'  << 'EOF'
 alias snapshots-list='sudo snapper -c root list'
 alias makesnap='sudo snapper -c root create --description '
 alias deletesnap='sudo snapper -c root delete '
-alias mtop='bash -c '\''IF=$(ip route | awk "/default/ {print \$5; exit}"); while true; do clear; echo "=== Ryzen ==="; sudo ryzenadj --info | grep -E "PPT VALUE|STAPM VALUE|THM VALUE"; echo; echo "=== RAM ==="; free -h | awk "/Mem:/ {printf \"Used: %s / %s (%.1f%%)\\n\",\$3,\$2,(\$3/\$2)*100}"; echo; echo "=== CPU clock ==="; awk -F: "/cpu MHz/ {s+=\$2;n++} END {printf \"Average: %.0f MHz\\n\",s/n}" /proc/cpuinfo; echo; echo "=== Temperatures ==="; sensors 2>/dev/null | grep -Ei "cpu|tctl|edge|junction|gpu|amdgpu"; echo; echo "=== Network ==="; ip -s link show "\$IF" | awk "/RX:/ {rx=\$2} /TX:/ {tx=\$2} END {print \"Interface: \" ENVIRON[\"IF\"]}"; sleep 1; done'\'' '
-
 EOF
+
+sudo dnf install lm_sensors
+sed -i '/^alias mtop=/d' ~/.bashrc
+
+cat >> ~/.bashrc <<'EOF'
+mtop() {
+    IF=$(ip route | awk '/default/ {print $5; exit}')
+    while true; do
+        clear
+        echo "=== Ryzen power ==="
+        sudo ryzenadj --info | grep -E 'PPT VALUE|STAPM VALUE|THM VALUE'
+
+        echo
+        echo "=== Temperatures ==="
+        sensors 2>/dev/null | grep -Ei 'cpu|tctl|tdie|k10temp|edge|junction|amdgpu|gpu' || echo "No sensors found"
+
+        echo
+        echo "=== RAM ==="
+        free -h | awk '/Mem:/ {
+            printf "Used: %s / %s (%.1f%%)\n", $3, $2, ($3/$2)*100
+        }'
+
+        echo
+        echo "=== CPU clock ==="
+        awk -F: '/cpu MHz/ {s += $2; n++} END {
+            printf "Average: %.0f MHz\n", s/n
+        }' /proc/cpuinfo
+
+        echo
+        echo "=== Network ($IF) ==="
+        R1=$(cat /sys/class/net/"$IF"/statistics/rx_bytes)
+        T1=$(cat /sys/class/net/"$IF"/statistics/tx_bytes)
+        sleep 1
+        R2=$(cat /sys/class/net/"$IF"/statistics/rx_bytes)
+        T2=$(cat /sys/class/net/"$IF"/statistics/tx_bytes)
+
+        awk -v r=$((R2-R1)) -v t=$((T2-T1)) \
+            'BEGIN {printf "Download: %.1f KB/s | Upload: %.1f KB/s\n", r/1024, t/1024}'
+        sleep 1
+    done
+}
+EOF
+
+source ~/.bashrc
 cat >> ~/.bashrc <<'EOF'
 
 os-age-start() {
@@ -488,9 +530,9 @@ os-age() {
     echo "OS age: $days days"
 }
 EOF
-sudo dnf install iftop
-sudo iftop
+
 
 sudo dnf install snapper
 sudo snapper -c root create-config /
 sudo snapper -c root create --description "Before changes"
+sudo sensors-detect
