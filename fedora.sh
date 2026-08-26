@@ -497,7 +497,7 @@ mtop() {
         echo "=== Network ($IF) ==="
         R1=$(cat "/sys/class/net/$IF/statistics/rx_bytes")
         T1=$(cat "/sys/class/net/$IF/statistics/tx_bytes")
-        sleep 1
+        sleep 5
         R2=$(cat "/sys/class/net/$IF/statistics/rx_bytes")
         T2=$(cat "/sys/class/net/$IF/statistics/tx_bytes")
 
