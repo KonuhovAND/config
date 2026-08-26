@@ -181,11 +181,31 @@ confirm_os_window_close 0
 # Required by tabswitcher
 allow_remote_control yes
 
-# Open a new tab in the current directory
+# New tab in the current directory
 map ctrl+shift+t launch --type=tab --cwd=current
 
-# Open a new tab in the parent directory
-map ctrl+shift+shift+t launch --type=tab --cwd=last_reported
+# New tab in the parent directory
+map ctrl+shift+p launch --type=tab --cwd=last_reported
+
+# Vertical split in the current directory
+map ctrl+shift+v launch --location=vsplit --cwd=current
+
+# Optional horizontal split
+map ctrl+shift+h launch --location=hsplit --cwd=current
+
+# Switch directly to tabs with Alt+number
+map alt+1 goto_tab 1
+map alt+2 goto_tab 2
+map alt+3 goto_tab 3
+map alt+4 goto_tab 4
+map alt+5 goto_tab 5
+map alt+6 goto_tab 6
+map alt+7 goto_tab 7
+map alt+8 goto_tab 8
+map alt+9 goto_tab 9
+
+# Interactive tab switcher
+map alt+0 launch --type=background $HOME/.local/bin/tabswitcher
 EOF
 
 # ==========================================
