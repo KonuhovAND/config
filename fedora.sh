@@ -459,3 +459,8 @@ echo "  new_tab_parent    - open a tab in the parent directory"
 echo
 echo "Data partition:"
 echo "  $DATA_DEVICE -> $DATA_MOUNT"
+
+
+sudo dnf install snapper
+sudo snapper -c root create-config /
+sudo snapper -c root create --description "Before changes"
