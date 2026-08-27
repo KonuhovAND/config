@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
-# Fedora Setup — Ryzen 7 7730U (lean)
+# Fedora 44 Setup — Ryzen 7 7730U, 16GB/512GB — lean
 
 echo "=== System update ==="
 sudo dnf upgrade --refresh -y
@@ -20,31 +20,25 @@ sudo dnf install -y "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-
 
 echo "=== Packages ==="
 sudo dnf copr enable -y atim/lazygit
-sudo dnf copr enable -y sneed/llama-cpp-vulkan   # llama.cpp with Vulkan GPU accel (AMD)
-sudo dnf install -y git curl neovim fontconfig unzip fzf jq kitty gcc \
+sudo dnf install -y git curl neovim fzf jq kitty gcc fish \
   mesa-va-drivers-freeworld gamemode mangohud \
   mpv lazygit syncthing btop llama-cpp lm_sensors snapper \
-  jetbrains-mono-fonts fedora-workstation-repositories
-
-echo "=== Chrome ==="
-sudo dnf config-manager setopt google-chrome.enabled=1
-sudo dnf install -y google-chrome-stable
+  vulkan-tools jetbrains-mono-fonts
+# Optional (Ryzen per-CCD telemetry; k10temp already covers Tctl):
+# sudo dnf copr enable -y shdwchn10/zenpower3 && sudo dnf install -y zenpower3 zenmonitor3
 
 echo "=== LazyVim ==="
 [[ -d ~/.config/nvim ]] || { git clone --depth 1 https://github.com/LazyVim/starter ~/.config/nvim; rm -rf ~/.config/nvim/.git; }
 
-echo "=== Nerd Font ==="
-mkdir -p ~/.local/share/fonts/JetBrainsMono
-curl -fL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip -o /tmp/jbm.zip
-unzip -oq /tmp/jbm.zip -d ~/.local/share/fonts/JetBrainsMono && rm -f /tmp/jbm.zip && fc-cache -f
-
 echo "=== Kitty ==="
 mkdir -p ~/.config/kitty
 cat > ~/.config/kitty/kitty.conf <<'EOF'
-font_family JetBrainsMono Nerd Font
-bold_font JetBrainsMono Nerd Font
-italic_font JetBrainsMono Nerd Font
-bold_italic_font JetBrainsMono Nerd Font
+# fish as interactive shell (login shell stays bash — no chsh)
+shell fish
+font_family JetBrains Mono
+bold_font auto
+italic_font auto
+bold_italic_font auto
 font_size 13.0
 enable_audio_bell no
 confirm_os_window_close 0
@@ -134,52 +128,18 @@ systemctl --user enable --now syncthing
 echo "=== Flatpaks ==="
 sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install -y flathub org.telegram.desktop \
-  md.obsidian.Obsidian com.usebottles.bottles org.vinegarhq.Sober \
+  com.zettlr.Zettlr com.usebottles.bottles org.vinegarhq.Sober \
   io.dbeaver.DBeaverCommunity
-sudo dnf install llama-cpp
 
-echo "=== RyzenAdj ==="
-sudo dnf copr enable -y shdwchn10/ryzenadj
-sudo dnf install -y ryzenadj
-RYZENADJ_BIN="$(command -v ryzenadj)"
-[[ -n "$RYZENADJ_BIN" ]] || { echo "ryzenadj not found"; exit 1; }
-sudo tee /usr/local/sbin/ryzen-power-limit >/dev/null <<EOF
-#!/usr/bin/env bash
-set -euo pipefail
-RYZENADJ_BIN="$RYZENADJ_BIN"
-AC_STAPM=10000; AC_FAST=18000; AC_SLOW=15000
-BATTERY_STAPM=8000; BATTERY_FAST=15000; BATTERY_SLOW=12000
-ON_AC=0
-for supply in /sys/class/power_supply/*; do
-  [[ -d "\$supply" ]] || continue
-  type="\$(cat "\$supply/type" 2>/dev/null || true)"
-  if [[ "\$type" != "Battery" ]] && [[ "\$(cat "\$supply/online" 2>/dev/null || echo 0)" == "1" ]]; then ON_AC=1; break; fi
-done
-if [[ "\$ON_AC" == "1" ]]; then MODE="AC"; STAPM="\$AC_STAPM"; FAST="\$AC_FAST"; SLOW="\$AC_SLOW"
-else MODE="Battery"; STAPM="\$BATTERY_STAPM"; FAST="\$BATTERY_FAST"; SLOW="\$BATTERY_SLOW"; fi
-echo "Applying \$MODE limits: STAPM \$((STAPM/1000))W Fast \$((FAST/1000))W Slow \$((SLOW/1000))W"
-"\$RYZENADJ_BIN" -a "\$STAPM" -b "\$FAST" -c "\$SLOW"
-EOF
-sudo chmod 755 /usr/local/sbin/ryzen-power-limit
-sudo tee /etc/systemd/system/ryzen-power-limit.service >/dev/null <<'EOF'
-[Unit]
-Description=Set RyzenAdj power limits based on AC or battery state
-After=multi-user.target
-[Service]
-Type=oneshot
-ExecStart=/usr/local/sbin/ryzen-power-limit
-EOF
-sudo tee /etc/udev/rules.d/99-ryzen-power-limit.rules >/dev/null <<'EOF'
-ACTION=="change", SUBSYSTEM=="power_supply", TAG+="systemd", ENV{SYSTEMD_WANTS}+="ryzen-power-limit.service"
-EOF
-sudo systemctl daemon-reload
-sudo udevadm control --reload-rules
-sudo systemctl enable --now ryzen-power-limit.service
-sudo ryzenadj -i
-sudo systemctl enable --now tuned
+echo "=== AMD power/thermal management (LACT) ==="
+sudo dnf copr enable -y ilyaz/LACT
+sudo dnf install -y lact
+sudo systemctl enable --now lactd
 
-echo "=== Monitoring ==="
+echo "=== Monitoring / Snapshots ==="
 sudo snapper -c root create-config /
+sudo snapper -c root set-config "TIMELINE_CREATE=yes,TIMELINE_LIMIT_HOURLY=5,TIMELINE_LIMIT_DAILY=7,TIMELINE_LIMIT_WEEKLY=0,TIMELINE_LIMIT_MONTHLY=3"
+sudo systemctl enable --now snapper-timer.timer snapper-cleanup.timer
 sudo snapper -c root create --description "Before changes"
 sudo sensors-detect --auto
 
@@ -191,10 +151,22 @@ mtop() {
   IF=$(ip route get 1.1.1.1 2>/dev/null | awk '{for (i=1;i<=NF;i++) if ($i=="dev") {print $(i+1); exit}}')
   while true; do
     clear
-    echo "=== Ryzen power ==="; sudo ryzenadj --info | grep -E 'PPT VALUE|STAPM VALUE|THM VALUE'
-    echo "=== Temperatures ==="; sensors 2>/dev/null | grep -Ei 'cpu|tctl|tdie|k10temp|edge|junction|amdgpu|gpu' || echo "No sensors"
-    echo "=== RAM ==="; free -h | awk '/Mem:/ {printf "Used: %s / %s (%.1f%%)\n", $3, $2, ($3/$2)*100}'
-    echo "=== CPU clock ==="; awk -F: '/cpu MHz/ {s += $2; n++} END {printf "Average: %.0f MHz\n", s/n}' /proc/cpuinfo
+    echo "=== Power ==="
+    for psu in /sys/class/power_supply/*; do
+      [[ -d "$psu" ]] || continue
+      [[ "$(cat "$psu/type" 2>/dev/null)" == "Battery" ]] || continue
+      cap=$(cat "$psu/capacity" 2>/dev/null || echo '?')
+      st=$(cat "$psu/status" 2>/dev/null || echo '?')
+      pw=$(cat "$psu/power_now" 2>/dev/null || echo '')
+      if [[ -n "$pw" ]]; then pw=$(awk -v p="$pw" 'BEGIN{printf "%.2f W", p/1000000}'); else pw='n/a'; fi
+      echo "Battery: ${cap}% | ${st} | ${pw}"
+    done
+    echo "=== Temperatures ==="
+    sensors 2>/dev/null | grep -Ei 'tctl|tdie|k10temp|edge|junction|amdgpu|gpu|cpu' || echo "No sensors"
+    echo "=== RAM ==="
+    free -h | awk '/Mem:/ {printf "Used: %s / %s (%.1f%%)\n", $3, $2, ($3/$2)*100}'
+    echo "=== CPU clock ==="
+    awk -F: '/cpu MHz/ {s += $2; n++} END {if (n) printf "Average: %.0f MHz\n", s/n}' /proc/cpuinfo
     echo "=== Network ($IF) ==="
     R1=$(cat "/sys/class/net/$IF/statistics/rx_bytes"); T1=$(cat "/sys/class/net/$IF/statistics/tx_bytes"); sleep 5
     R2=$(cat "/sys/class/net/$IF/statistics/rx_bytes"); T2=$(cat "/sys/class/net/$IF/statistics/tx_bytes")
@@ -233,7 +205,7 @@ set $term foot
 set $menu wofi --show drun
 set $lock swaylock -f -c 1a1b26
 
-font pango:JetBrainsMono Nerd Font 10
+font pango:JetBrains Mono 10
 
 default_border pixel 2
 default_floating_border pixel 2
@@ -266,6 +238,7 @@ bindsym $mod+Right focus right
 bindsym $mod+H focus left
 bindsym $mod+J focus down
 bindsym $mod+K focus up
+# focus right: use arrow keys ($mod+L is reserved for lock)
 
 bindsym $mod+Shift+Left move left
 bindsym $mod+Shift+Down move down
@@ -355,11 +328,9 @@ if [[ ! -f ~/.config/sway/wallpaper.jpg ]]; then
 fi
 
 
-
-
 echo "=== Setup completed ==="
 git config --global user.name 'KonuhovAND'
 git config --global user.email 'andreykonuhov8@gmail.com'
 ssh-keygen -t ed25519 -C "andreykonuhov8@gmail.com" -N "" -f ~/.ssh/id_ed25519
 cat ~/.ssh/id_ed25519.pub
-echo "Commands: tabswitcher | new_tab | new_tab_parent | mtop | makesnap | btop"
+echo "Commands: tabswitcher | new_tab | new_tab_parent | mtop | makesnap | btop | fish"
