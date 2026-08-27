@@ -135,7 +135,8 @@ echo "=== Flatpaks ==="
 sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install -y flathub com.spotify.Client com.discordapp.Discord org.telegram.desktop \
   md.obsidian.Obsidian com.usebottles.bottles org.vinegarhq.Sober \
-  com.jeffser.Alpaca io.dbeaver.DBeaverCommunity
+  io.dbeaver.DBeaverCommunity
+sudo dnf install llama-cpp
 
 echo "=== RyzenAdj ==="
 sudo dnf copr enable -y shdwchn10/ryzenadj
@@ -215,6 +216,146 @@ sudo umount /mnt/data 2>/dev/null || true
 sudo sed -i '\|[[:space:]]/mnt/data[[:space:]]|d' /etc/fstab
 echo "UUID=$DATA_UUID /mnt/data ext4 defaults,nofail,x-gvfs-show 0 2" | sudo tee -a /etc/fstab >/dev/null
 sudo findmnt --verify && sudo mount /mnt/data && findmnt /mnt/data
+
+
+# ============ Sway (tiling WM) ============
+echo "=== Installing Sway ==="
+sudo dnf install -y sway swaylock swayidle swaybg foot wofi mako waybar \
+  brightnessctl playerctl grim slurp wl-clipboard ranger \
+  network-manager-applet xdg-desktop-portal-wlr
+
+echo "=== Configuring Sway ==="
+mkdir -p ~/.config/sway ~/Pictures
+cat > ~/.config/sway/config <<'EOF'
+# Sway config - Fedora style, Hyprland-like, no gaps
+set $mod Mod4
+set $term foot
+set $menu wofi --show drun
+set $lock swaylock -f -c 1a1b26
+
+font pango:JetBrainsMono Nerd Font 10
+
+default_border pixel 2
+default_floating_border pixel 2
+focus_follows_mouse no
+gaps inner 0
+gaps outer 0
+smart_borders on
+
+client.focused          #7aa2f7 #1a1b26 #c0caf5 #7aa2f7 #7aa2f7
+client.focused_inactive #414868 #24283b #a9b1d6 #414868 #414868
+client.unfocused        #24283b #1a1b26 #565f89 #24283b #24283b
+client.urgent           #f7768e #1a1b26 #f7768e #f7768e #f7768e
+
+output * bg ~/.config/sway/wallpaper.jpg fill
+output * adaptive_sync on
+
+bindsym $mod+Return exec $term
+bindsym $mod+Q kill
+bindsym $mod+D exec $menu
+bindsym $mod+E exec $term -e ranger
+bindsym $mod+B exec firefox
+bindsym $mod+L exec $lock
+bindsym $mod+Shift+C reload
+bindsym $mod+Shift+E exec swaymsg exit
+
+bindsym $mod+Left focus left
+bindsym $mod+Down focus down
+bindsym $mod+Up focus up
+bindsym $mod+Right focus right
+bindsym $mod+H focus left
+bindsym $mod+J focus down
+bindsym $mod+K focus up
+
+bindsym $mod+Shift+Left move left
+bindsym $mod+Shift+Down move down
+bindsym $mod+Shift+Up move up
+bindsym $mod+Shift+Right move right
+bindsym $mod+Shift+H move left
+bindsym $mod+Shift+J move down
+bindsym $mod+Shift+K move up
+bindsym $mod+Shift+L move right
+
+bindsym $mod+V split v
+bindsym $mod+C split h
+bindsym $mod+F fullscreen toggle
+bindsym $mod+A focus parent
+bindsym $mod+S layout stacking
+bindsym $mod+W layout tabbed
+bindsym $mod+T layout toggle split
+bindsym $mod+Space focus mode_toggle
+bindsym $mod+Shift+Space floating toggle
+bindsym $mod+Shift+Minus move scratchpad
+bindsym $mod+Minus scratchpad show
+
+bindsym $mod+1 workspace number 1
+bindsym $mod+2 workspace number 2
+bindsym $mod+3 workspace number 3
+bindsym $mod+4 workspace number 4
+bindsym $mod+5 workspace number 5
+bindsym $mod+6 workspace number 6
+bindsym $mod+7 workspace number 7
+bindsym $mod+8 workspace number 8
+bindsym $mod+9 workspace number 9
+bindsym $mod+0 workspace number 10
+bindsym $mod+Shift+1 move container to workspace number 1
+bindsym $mod+Shift+2 move container to workspace number 2
+bindsym $mod+Shift+3 move container to workspace number 3
+bindsym $mod+Shift+4 move container to workspace number 4
+bindsym $mod+Shift+5 move container to workspace number 5
+bindsym $mod+Shift+6 move container to workspace number 6
+bindsym $mod+Shift+7 move container to workspace number 7
+bindsym $mod+Shift+8 move container to workspace number 8
+bindsym $mod+Shift+9 move container to workspace number 9
+bindsym $mod+Shift+0 move container to workspace number 10
+
+bindsym XF86AudioRaiseVolume exec wpctl set-volume -l 1.0 @DEFAULT_AUDIO_SINK@ 5%+
+bindsym XF86AudioLowerVolume exec wpctl set-volume @DEFAULT_AUDIO_SINK@ 5%-
+bindsym XF86AudioMute exec wpctl set-mute @DEFAULT_AUDIO_SINK@ toggle
+bindsym XF86AudioMicMute exec wpctl set-mute @DEFAULT_AUDIO_SOURCE@ toggle
+bindsym XF86MonBrightnessUp exec brightnessctl set +5%
+bindsym XF86MonBrightnessDown exec brightnessctl set 5%-
+bindsym XF86AudioPlay exec playerctl play-pause
+bindsym XF86AudioNext exec playerctl next
+bindsym XF86AudioPrev exec playerctl previous
+bindsym Print exec grim -g "$(slurp)" ~/Pictures/$(date +%s).png
+
+mode "resize" {
+    bindsym Left resize shrink width 20px
+    bindsym Down resize grow height 20px
+    bindsym Up resize shrink height 20px
+    bindsym Right resize grow width 20px
+    bindsym Return mode "default"
+    bindsym Escape mode "default"
+}
+bindsym $mod+R mode "resize"
+
+input type:keyboard {
+    xkb_layout us
+    xkb_options caps:escape
+}
+input type:touchpad {
+    tap enabled
+    natural_scroll enabled
+}
+
+exec swayidle -w timeout 600 '$lock' timeout 900 'swaymsg "output * dpms off"' resume 'swaymsg "output * dpms on"' before-sleep '$lock'
+exec mako
+exec nm-applet --indicator
+
+bar {
+    swaybar_command waybar
+}
+EOF
+
+# Wallpaper fallback: solid color until you drop a wallpaper.jpg in place
+if [[ ! -f ~/.config/sway/wallpaper.jpg ]]; then
+    sed -i 's|^output \* bg .*|output * bg 1a1b26 solid_color|' ~/.config/sway/config
+    echo "No wallpaper found — using solid color. Put one at ~/.config/sway/wallpaper.jpg"
+fi
+
+
+
 
 echo "=== Setup completed ==="
 git config --global user.name 'KonuhovAND'
