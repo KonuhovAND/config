@@ -1,172 +1,90 @@
 #!/usr/bin/env bash
 set -euo pipefail
-
-# ==========================================
-# Fedora Setup
-# Ryzen 7 7730U
-# ==========================================
+# Fedora Setup — Ryzen 7 7730U (compact)
 
 echo "=== Updating system ==="
 sudo dnf upgrade --refresh -y
 
-# ==========================================
-# RPM Fusion
-# ==========================================
+# ============ Happ Desktop (first) ============
+echo "=== Installing Happ Desktop 4.1.1 ==="
+if [[ "$(uname -m)" != "x86_64" ]]; then
+    echo "Error: Happ is x86_64 only. Detected: $(uname -m)"; exit 1
+fi
+HAPP_URL="https://github.com/Happ-proxy/happ-desktop/releases/download/4.1.1/Happ.linux.x64.rpm"
+curl -fL "$HAPP_URL" -o /tmp/Happ.linux.x64.rpm
+sudo dnf install -y /tmp/Happ.linux.x64.rpm
+rm -f /tmp/Happ.linux.x64.rpm
 
+# ============ GitHub CLI + account ============
+echo "=== Installing GitHub CLI ==="
+sudo dnf install -y gh
+if ! gh auth status >/dev/null 2>&1; then
+    echo "Login or register a GitHub account (choose 'Login with a web browser',")
+    echo "then use 'Create an account' on the opened page if you don't have one):"
+    gh auth login -p https -w
+    gh auth setup-git
+fi
+
+# ============ RPM Fusion ============
 echo "=== Enabling RPM Fusion ==="
-
 sudo dnf install -y \
   "https://download1.rpmfusion.org/free/fedora/rpmfusion-free-release-$(rpm -E %fedora).noarch.rpm" \
   "https://download1.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-$(rpm -E %fedora).noarch.rpm"
-# ==========================================
-# Happ Desktop
-# ==========================================
 
-echo "=== Installing Happ Desktop 4.1.1 ==="
-
-if [[ "$(uname -m)" != "x86_64" ]]; then
-    echo "Error: this Happ package is for x86_64 systems."
-    echo "Detected architecture: $(uname -m)"
-    exit 1
-fi
-
-HAPP_VERSION="4.1.1"
-HAPP_RPM="/tmp/Happ.linux.x64.rpm"
-HAPP_URL="https://github.com/Happ-proxy/happ-desktop/releases/download/${HAPP_VERSION}/Happ.linux.x64.rpm"
-
-curl -fL "$HAPP_URL" -o "$HAPP_RPM"
-sudo dnf install -y "$HAPP_RPM"
-rm -f "$HAPP_RPM"
-# ==========================================
-# Core packages
-# ==========================================
-
+# ============ Core packages (reduced) ============
 echo "=== Installing core tools ==="
-
 sudo dnf install -y \
-  git \
-  curl \
-  wget \
-  vim \
-  neovim \
-  htop \
-  fontconfig \
-  unzip \
-  p7zip \
-  p7zip-plugins \
-  fzf \
-  jq \
-  zsh \
-  feh \
-  fastfetch \
-  kitty \
-  nodejs \
-  npm \
-  python3 \
-  python3-pip \
-  gcc \
-  gcc-c++ \
-  make \
-  cmake
+  git curl neovim fontconfig unzip \
+  fzf jq kitty nodejs npm python3 \
+  gcc make
 
-# ==========================================
-# LazyVim
-# ==========================================
-
+# ============ LazyVim ============
 echo "=== Configuring Neovim ==="
-
 if [[ ! -d "$HOME/.config/nvim" ]]; then
     git clone https://github.com/LazyVim/starter "$HOME/.config/nvim"
     rm -rf "$HOME/.config/nvim/.git"
 else
-    echo "Neovim configuration already exists; skipping LazyVim setup."
+    echo "Neovim config exists; skipping."
 fi
 
-# ==========================================
-# Python uv
-# ==========================================
-
+# ============ uv ============
 echo "=== Installing uv ==="
-
 if ! command -v uv >/dev/null 2>&1; then
     curl -LsSf https://astral.sh/uv/install.sh | sh
 fi
-
 export PATH="$HOME/.local/bin:$PATH"
-
-# Install Python 3.14 if uv supports it
 uv python install 3.14 || true
 
-# ==========================================
-# AMD graphics and virtualization
-# ==========================================
-
+# ============ AMD graphics + gaming ============
 echo "=== Configuring AMD graphics ==="
-
 sudo dnf install -y \
-  mesa-dri-drivers \
-  mesa-va-drivers-freeworld \
-  mesa-vulkan-drivers \
-  vulkan-loader \
-  vulkan-loader.i686 \
-  amd-gpu-firmware \
-  thermald
+  mesa-dri-drivers mesa-va-drivers-freeworld \
+  mesa-vulkan-drivers vulkan-loader \
+  gamemode mangohud
 
-sudo dnf install -y @virtualization
-
-sudo systemctl enable --now thermald
-
-# Gaming tools
-sudo dnf install -y gamemode mangohud
-
-# ==========================================
-# Applications
-# ==========================================
-
+# ============ Applications ============
 echo "=== Installing applications ==="
-
 sudo dnf install -y qbittorrent mpv
-
 sudo dnf copr enable -y atim/lazygit
 sudo dnf install -y lazygit
 
-# ==========================================
-# Google Chrome
-# ==========================================
-
+# ============ Google Chrome ============
 echo "=== Installing Google Chrome ==="
-
 sudo dnf install -y fedora-workstation-repositories
 sudo dnf config-manager setopt google-chrome.enabled=1
 sudo dnf install -y google-chrome-stable
 
-# ==========================================
-# Fonts
-# ==========================================
-
+# ============ Fonts ============
 echo "=== Installing JetBrains Mono Nerd Font ==="
-
 sudo dnf install -y jetbrains-mono-fonts
-
 mkdir -p "$HOME/.local/share/fonts/JetBrainsMono"
-
-curl -fL \
-  https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip \
-  -o /tmp/JetBrainsMono.zip
-
-unzip -o /tmp/JetBrainsMono.zip \
-  -d "$HOME/.local/share/fonts/JetBrainsMono"
-
+curl -fL https://github.com/ryanoasis/nerd-fonts/releases/latest/download/JetBrainsMono.zip -o /tmp/JetBrainsMono.zip
+unzip -o /tmp/JetBrainsMono.zip -d "$HOME/.local/share/fonts/JetBrainsMono"
 fc-cache -f
 
-# ==========================================
-# Kitty configuration
-# ==========================================
-
+# ============ Kitty config ============
 echo "=== Configuring Kitty ==="
-
 mkdir -p "$HOME/.config/kitty"
-
 cat > "$HOME/.config/kitty/kitty.conf" <<'EOF'
 font_family JetBrainsMono Nerd Font
 bold_font JetBrainsMono Nerd Font
@@ -218,386 +136,182 @@ active_tab_foreground   #1E1E2E
 active_tab_background   #CBA6F7
 inactive_tab_foreground #A6ADC8
 inactive_tab_background #313244
-color0                  #45475A
-color1                  #F38BA8
-color2                  #A6E3A1
-color3                  #F9E2AF
-color4                  #89B4FA
-color5                  #F5C2E7
-color6                  #94E2D5
-color7                  #BAC2DE
-color8                  #585B70
-color9                  #F38BA8
-color10                 #A6E3A1
-color11                 #F9E2AF
-color12                 #89B4FA
-color13                 #F5C2E7
-color14                 #94E2D5
-color15                 #A6ADC8
+color0  #45475A
+color1  #F38BA8
+color2  #A6E3A1
+color3  #F9E2AF
+color4  #89B4FA
+color5  #F5C2E7
+color6  #94E2D5
+color7  #BAC2DE
+color8  #585B70
+color9  #F38BA8
+color10 #A6E3A1
+color11 #F9E2AF
+color12 #89B4FA
+color13 #F5C2E7
+color14 #94E2D5
+color15 #A6ADC8
 EOF
 
-# ==========================================
-# Kitty helper commands
-# ==========================================
-
-echo "=== Installing Kitty helper commands ==="
-
+# ============ Kitty helpers ============
 mkdir -p "$HOME/.local/bin"
-
 cat > "$HOME/.local/bin/tabswitcher" <<'EOF'
 #!/usr/bin/env bash
 set -euo pipefail
-
-if ! command -v kitty >/dev/null 2>&1; then
-    echo "Error: kitty is not installed."
-    exit 1
-fi
-
-if ! command -v jq >/dev/null 2>&1; then
-    echo "Error: jq is not installed."
-    exit 1
-fi
-
-if ! command -v fzf >/dev/null 2>&1; then
-    echo "Error: fzf is not installed."
-    exit 1
-fi
-
-if [[ -z "${KITTY_WINDOW_ID:-}" ]]; then
-    echo "Error: tabswitcher must be run inside Kitty."
-    exit 1
-fi
-
-selected="$(
-    kitty @ ls |
-        jq -r '
-            .[] |
-            .tabs[] |
-            [
-                .id,
-                (.title // "Untitled")
-            ] |
-            @tsv
-        ' |
-        fzf --height=40% --layout=reverse --border --prompt="Tabs> "
-)" || exit 0
-
+for cmd in kitty jq fzf; do
+    command -v "$cmd" >/dev/null 2>&1 || { echo "Error: $cmd not installed."; exit 1; }
+done
+[[ -n "${KITTY_WINDOW_ID:-}" ]] || { echo "Error: run inside Kitty."; exit 1; }
+selected="$(kitty @ ls | jq -r '.[] | .tabs[] | [.id, (.title // "Untitled")] | @tsv' |
+    fzf --height=40% --layout=reverse --border --prompt="Tabs> ")" || exit 0
 tab_id="${selected%%$'\t'*}"
-
-if [[ -n "$tab_id" ]]; then
-    kitty @ focus-tab --match "id:$tab_id"
-fi
+[[ -n "$tab_id" ]] && kitty @ focus-tab --match "id:$tab_id"
 EOF
-
 chmod +x "$HOME/.local/bin/tabswitcher"
 
-# Add shell commands to Bash and Zsh
 for shell_rc in "$HOME/.bashrc" "$HOME/.zshrc"; do
     touch "$shell_rc"
-
-    if ! grep -q 'function new_tab_parent' "$shell_rc"; then
-        cat >> "$shell_rc" <<'EOF'
+    grep -q 'function new_tab_parent' "$shell_rc" || cat >> "$shell_rc" <<'EOF'
 
 # Kitty helpers
-new_tab() {
-    kitty @ launch --type=tab --cwd="$PWD"
-}
-
-new_tab_parent() {
-    kitty @ launch --type=tab --cwd="$(dirname "$PWD")"
-}
-
+new_tab() { kitty @ launch --type=tab --cwd="$PWD"; }
+new_tab_parent() { kitty @ launch --type=tab --cwd="$(dirname "$PWD")"; }
 alias tabswitcher="$HOME/.local/bin/tabswitcher"
 EOF
-    fi
 done
 
-
-
-# ==========================================
-# Syncthing
-# ==========================================
-
+# ============ Syncthing ============
 echo "=== Installing Syncthing ==="
-
 sudo dnf install -y syncthing
 systemctl --user enable --now syncthing
 
-# ==========================================
-# Flatpak
-# Wine, Bottles, and Sober intentionally removed
-# ==========================================
-
+# ============ Flatpak ============
 echo "=== Configuring Flatpak ==="
-
-sudo flatpak remote-add --if-not-exists \
-  flathub \
-  https://dl.flathub.org/repo/flathub.flatpakrepo
-
-echo "=== Installing Flatpak applications ==="
-
+sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
 flatpak install -y flathub \
-  com.spotify.Client \
-  com.discordapp.Discord \
-  org.telegram.desktop \
-  md.obsidian.Obsidian \
-  com.jeffser.Alpaca \
-  io.dbeaver.DBeaverCommunity
+  com.spotify.Client com.discordapp.Discord org.telegram.desktop \
+  md.obsidian.Obsidian com.jeffser.Alpaca io.dbeaver.DBeaverCommunity
 
-# ==========================================
-# RyzenAdj
-# ==========================================
-
-# ==========================================
-# RyzenAdj with automatic AC/Battery limits
-# ==========================================
-
+# ============ RyzenAdj ============
 echo "=== Installing RyzenAdj ==="
-
 sudo dnf copr enable -y shdwchn10/ryzenadj
 sudo dnf install -y ryzenadj
-
 RYZENADJ_BIN="$(command -v ryzenadj)"
-
-if [[ -z "$RYZENADJ_BIN" ]]; then
-    echo "Error: ryzenadj was not found."
-    exit 1
-fi
-
-# Power limits in milliwatts
-# AC:      STAPM 8 W, Fast 18 W, Slow 15 W
-# Battery: STAPM 6 W, Fast 15 W, Slow 12 W
-
-AC_STAPM=8000
-AC_FAST=18000
-AC_SLOW=15000
-
-BATTERY_STAPM=6000
-BATTERY_FAST=15000
-BATTERY_SLOW=12000
+[[ -n "$RYZENADJ_BIN" ]] || { echo "Error: ryzenadj not found."; exit 1; }
 
 sudo tee /usr/local/sbin/ryzen-power-limit >/dev/null <<EOF
 #!/usr/bin/env bash
 set -euo pipefail
-
 RYZENADJ_BIN="$RYZENADJ_BIN"
-
-AC_STAPM=$AC_STAPM
-AC_FAST=$AC_FAST
-AC_SLOW=$AC_SLOW
-
-BATTERY_STAPM=$BATTERY_STAPM
-BATTERY_FAST=$BATTERY_FAST
-BATTERY_SLOW=$BATTERY_SLOW
-
-# Detect whether any non-battery power supply is online.
+AC_STAPM=10000; AC_FAST=18000; AC_SLOW=15000
+BATTERY_STAPM=8000; BATTERY_FAST=15000; BATTERY_SLOW=12000
 ON_AC=0
-
 for supply in /sys/class/power_supply/*; do
     [[ -d "\$supply" ]] || continue
-
     type="\$(cat "\$supply/type" 2>/dev/null || true)"
-
-    if [[ "\$type" != "Battery" ]] &&
-       [[ "\$(cat "\$supply/online" 2>/dev/null || echo 0)" == "1" ]]; then
-        ON_AC=1
-        break
+    if [[ "\$type" != "Battery" ]] && [[ "\$(cat "\$supply/online" 2>/dev/null || echo 0)" == "1" ]]; then
+        ON_AC=1; break
     fi
 done
-
 if [[ "\$ON_AC" == "1" ]]; then
-    MODE="AC"
-    STAPM="\$AC_STAPM"
-    FAST="\$AC_FAST"
-    SLOW="\$AC_SLOW"
+    MODE="AC"; STAPM="\$AC_STAPM"; FAST="\$AC_FAST"; SLOW="\$AC_SLOW"
 else
-    MODE="Battery"
-    STAPM="\$BATTERY_STAPM"
-    FAST="\$BATTERY_FAST"
-    SLOW="\$BATTERY_SLOW"
+    MODE="Battery"; STAPM="\$BATTERY_STAPM"; FAST="\$BATTERY_FAST"; SLOW="\$BATTERY_SLOW"
 fi
-
-echo "Applying RyzenAdj limits for \$MODE:"
-echo "  STAPM: \$((STAPM / 1000)) W"
-echo "  Fast:  \$((FAST / 1000)) W"
-echo "  Slow:  \$((SLOW / 1000)) W"
-
+echo "Applying RyzenAdj limits for \$MODE: STAPM \$((STAPM/1000))W Fast \$((FAST/1000))W Slow \$((SLOW/1000))W"
 "\$RYZENADJ_BIN" -a "\$STAPM" -b "\$FAST" -c "\$SLOW"
 EOF
-
 sudo chmod 755 /usr/local/sbin/ryzen-power-limit
 
 sudo tee /etc/systemd/system/ryzen-power-limit.service >/dev/null <<'EOF'
 [Unit]
 Description=Set RyzenAdj power limits based on AC or battery state
 After=multi-user.target
-
 [Service]
 Type=oneshot
 ExecStart=/usr/local/sbin/ryzen-power-limit
 EOF
 
-# Re-run the service whenever AC/battery status changes
 sudo tee /etc/udev/rules.d/99-ryzen-power-limit.rules >/dev/null <<'EOF'
 ACTION=="change", SUBSYSTEM=="power_supply", TAG+="systemd", ENV{SYSTEMD_WANTS}+="ryzen-power-limit.service"
 EOF
 
 sudo systemctl daemon-reload
 sudo udevadm control --reload-rules
-
-# Apply the correct limit immediately
-sudo systemctl start ryzen-power-limit.service
-
-# Apply the correct limit during boot
-sudo systemctl enable ryzen-power-limit.service
-
-echo
+sudo systemctl enable --now ryzen-power-limit.service
 echo "=== Current Ryzen power settings ==="
 sudo ryzenadj -i
 
-# ==========================================
-# tuned
-# ==========================================
-
-echo "=== Enabling tuned ==="
-
+# ============ tuned ============
 sudo systemctl enable --now tuned
 tuned-adm active || true
 
-# ==========================================
-# Mount data partition
-# ==========================================
+# ============ Monitoring tools ============
+sudo dnf install -y lm_sensors snapper
+sudo snapper -c root create-config /
+sudo snapper -c root create --description "Before changes"
+sudo sensors-detect --auto
 
-echo "=== Configuring /mnt/data ==="
-
-DATA_UUID="93137e69-f559-468b-b045-57576895127c"
-DATA_MOUNT="/mnt/data"
-
-DATA_DEVICE="$(sudo blkid -U "$DATA_UUID" 2>/dev/null || true)"
-
-if [[ -z "$DATA_DEVICE" ]]; then
-    echo "Error: no block device was found with UUID $DATA_UUID"
-    echo "Check the UUID with:"
-    echo "  lsblk -f"
-    echo "  sudo blkid"
-    exit 1
-fi
-
-DATA_FILESYSTEM="$(sudo blkid -o value -s TYPE "$DATA_DEVICE")"
-
-if [[ "$DATA_FILESYSTEM" != "ext4" ]]; then
-    echo "Error: $DATA_DEVICE has filesystem type '$DATA_FILESYSTEM', not ext4."
-    exit 1
-fi
-
-sudo mkdir -p "$DATA_MOUNT"
-
-# Back up fstab before modifying it
-sudo cp /etc/fstab "/etc/fstab.backup.$(date +%Y%m%d-%H%M%S)"
-
-# Unmount it if an old entry is currently mounted
-sudo umount "$DATA_MOUNT" 2>/dev/null || true
-
-# Remove old /mnt/data entries, including the previous exFAT entry
-sudo sed -i '\|[[:space:]]/mnt/data[[:space:]]|d' /etc/fstab
-
-sudo tee -a /etc/fstab >/dev/null <<EOF
-UUID=$DATA_UUID $DATA_MOUNT ext4 defaults,nofail,x-gvfs-show 0 2
-EOF
-
-echo "=== Checking /etc/fstab ==="
-sudo findmnt --verify
-
-echo "=== Mounting /mnt/data ==="
-sudo mount "$DATA_MOUNT"
-
-echo "=== Mounted data partition ==="
-findmnt "$DATA_MOUNT"
-
-echo
-echo "Setup completed successfully."
-echo
-echo "Kitty commands:"
-echo "  tabswitcher       - interactively switch Kitty tabs"
-echo "  new_tab           - open a tab in the current directory"
-echo "  new_tab_parent    - open a tab in the parent directory"
-echo
-echo "Data partition:"
-echo "  $DATA_DEVICE -> $DATA_MOUNT"
-
-cat >>  '~/.bashrc'  << 'EOF'
+# ============ Bash extras ============
+grep -q 'snapshots-list' ~/.bashrc || cat >> ~/.bashrc <<'EOF'
 alias snapshots-list='sudo snapper -c root list'
 alias makesnap='sudo snapper -c root create --description '
 alias deletesnap='sudo snapper -c root delete '
-EOF
 
-sudo dnf install lm_sensors
-sed -i '/^alias mtop=/d' ~/.bashrc
+os-age-start() {
+    date +%s > "$HOME/.os-start-time"
+    echo "OS age counter started: $(date '+%Y-%m-%d %H:%M:%S')"
+}
+os-age() {
+    [[ -f "$HOME/.os-start-time" ]] || { echo "Counter not started. Run: os-age-start"; return 1; }
+    local start now days
+    start=$(cat "$HOME/.os-start-time"); now=$(date +%s)
+    days=$(( (now - start) / 86400 ))
+    echo "OS age: $days days"
+}
 
-cat >> ~/.bashrc <<'EOF'
 mtop() {
     IF=$(ip route get 1.1.1.1 2>/dev/null | awk '{for (i=1;i<=NF;i++) if ($i=="dev") {print $(i+1); exit}}')
     while true; do
         clear
         echo "=== Ryzen power ==="
         sudo ryzenadj --info | grep -E 'PPT VALUE|STAPM VALUE|THM VALUE'
-
-        echo
-        echo "=== Temperatures ==="
+        echo; echo "=== Temperatures ==="
         sensors 2>/dev/null | grep -Ei 'cpu|tctl|tdie|k10temp|edge|junction|amdgpu|gpu' || echo "No sensors found"
-
-        echo
-        echo "=== RAM ==="
-        free -h | awk '/Mem:/ {
-            printf "Used: %s / %s (%.1f%%)\n", $3, $2, ($3/$2)*100
-        }'
-
-        echo
-        echo "=== CPU clock ==="
-        awk -F: '/cpu MHz/ {s += $2; n++} END {
-            printf "Average: %.0f MHz\n", s/n
-        }' /proc/cpuinfo
-
-        echo
-        echo "=== Network ($IF) ==="
-        R1=$(cat "/sys/class/net/$IF/statistics/rx_bytes")
-        T1=$(cat "/sys/class/net/$IF/statistics/tx_bytes")
+        echo; echo "=== RAM ==="
+        free -h | awk '/Mem:/ {printf "Used: %s / %s (%.1f%%)\n", $3, $2, ($3/$2)*100}'
+        echo; echo "=== CPU clock ==="
+        awk -F: '/cpu MHz/ {s += $2; n++} END {printf "Average: %.0f MHz\n", s/n}' /proc/cpuinfo
+        echo; echo "=== Network ($IF) ==="
+        R1=$(cat "/sys/class/net/$IF/statistics/rx_bytes"); T1=$(cat "/sys/class/net/$IF/statistics/tx_bytes")
         sleep 5
-        R2=$(cat "/sys/class/net/$IF/statistics/rx_bytes")
-        T2=$(cat "/sys/class/net/$IF/statistics/tx_bytes")
-
-        awk -v r=$((R2-R1)) -v t=$((T2-T1)) \
-            'BEGIN {printf "Download: %.1f KB/s | Upload: %.1f KB/s\n", r/1024, t/1024}'
+        R2=$(cat "/sys/class/net/$IF/statistics/rx_bytes"); T2=$(cat "/sys/class/net/$IF/statistics/tx_bytes")
+        awk -v r=$((R2-R1)) -v t=$((T2-T1)) 'BEGIN {printf "Download: %.1f KB/s | Upload: %.1f KB/s\n", r/1024, t/1024}'
         sleep 1
     done
 }
 EOF
 
-source ~/.bashrc
-cat >> ~/.bashrc <<'EOF'
+# ============ Data partition ============
+echo "=== Configuring /mnt/data ==="
+DATA_UUID="93137e69-f559-468b-b045-57576895127c"
+DATA_MOUNT="/mnt/data"
+DATA_DEVICE="$(sudo blkid -U "$DATA_UUID" 2>/dev/null || true)"
+[[ -n "$DATA_DEVICE" ]] || { echo "Error: no device with UUID $DATA_UUID. Check: lsblk -f"; exit 1; }
+DATA_FS="$(sudo blkid -o value -s TYPE "$DATA_DEVICE")"
+[[ "$DATA_FS" == "ext4" ]] || { echo "Error: $DATA_DEVICE is '$DATA_FS', not ext4."; exit 1; }
+sudo mkdir -p "$DATA_MOUNT"
+sudo cp /etc/fstab "/etc/fstab.backup.$(date +%Y%m%d-%H%M%S)"
+sudo umount "$DATA_MOUNT" 2>/dev/null || true
+sudo sed -i '\|[[:space:]]/mnt/data[[:space:]]|d' /etc/fstab
+echo "UUID=$DATA_UUID $DATA_MOUNT ext4 defaults,nofail,x-gvfs-show 0 2" | sudo tee -a /etc/fstab >/dev/null
+sudo findmnt --verify
+sudo mount "$DATA_MOUNT"
+findmnt "$DATA_MOUNT"
 
-os-age-start() {
-    date +%s > "$HOME/.os-start-time"
-    echo "OS age counter started: $(date '+%Y-%m-%d %H:%M:%S')"
-}
-
-os-age() {
-    if [[ ! -f "$HOME/.os-start-time" ]]; then
-        echo "Counter not started. Run: os-age-start"
-        return 1
-    fi
-
-    local start now days
-    start=$(cat "$HOME/.os-start-time")
-    now=$(date +%s)
-    days=$(( (now - start) / 86400 ))
-
-    echo "OS age: $days days"
-}
-EOF
-
-
-sudo dnf install snapper
-sudo snapper -c root create-config /
-sudo snapper -c root create --description "Before changes"
-sudo sensors-detect
+echo
+echo "=== Setup completed ==="
+echo "GitHub: $(gh auth status 2>&1 | head -1)"
+echo "Data: $DATA_DEVICE -> $DATA_MOUNT"
+echo "Commands: tabswitcher | new_tab | new_tab_parent | mtop | os-age | makesnap"
