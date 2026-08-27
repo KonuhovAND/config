@@ -133,7 +133,7 @@ systemctl --user enable --now syncthing
 
 echo "=== Flatpaks ==="
 sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-flatpak install -y flathub com.spotify.Client com.discordapp.Discord org.telegram.desktop \
+flatpak install -y flathub org.telegram.desktop \
   md.obsidian.Obsidian com.usebottles.bottles org.vinegarhq.Sober \
   io.dbeaver.DBeaverCommunity
 sudo dnf install llama-cpp
